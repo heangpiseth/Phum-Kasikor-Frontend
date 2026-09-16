@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phum_kasikors/controller/farmer/earnings_controller.dart';
 import 'package:phum_kasikors/controller/farmer/famer_controller.dart';
+import 'package:phum_kasikors/controller/farmer/profile_controller.dart';
 import 'package:phum_kasikors/view/farmer/Farm/farmer_my_farm.dart';
 import 'package:phum_kasikors/view/farmer/earning/farmer_earnings_screen.dart';
 import 'package:phum_kasikors/view/farmer/farmer_home_screen.dart';
 import 'package:phum_kasikors/view/farmer/orders/farmer_order_screen.dart';
 import 'package:phum_kasikors/view/farmer/profile/farmer_profile_screen.dart';
+import 'package:phum_kasikors/widgets/ai_assistant/ai_assistant_floating_button.dart';
 
 
 class FarmerBottomNav extends StatefulWidget {
@@ -48,6 +50,14 @@ class _FarmerBottomNavState extends State<FarmerBottomNav> {
       );
     }
 
+    // Profile can also be opened as a tab without visiting the app root.
+    if (!Get.isRegistered<FarmerProfileController>()) {
+      Get.put(
+        FarmerProfileController(),
+        permanent: true,
+      );
+    }
+
     // Main Farmer pages
     _pages = [
       const FarmerHomeScreen(),
@@ -65,6 +75,7 @@ class _FarmerBottomNavState extends State<FarmerBottomNav> {
         index: _selectedIndex,
         children: _pages,
       ),
+      floatingActionButton: const AiAssistantFloatingButton(isFarmer: true),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {

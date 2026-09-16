@@ -26,7 +26,7 @@ class FarmMapView extends GetView<FarmMapController> {
               left: 8,
               child: RoundIconButton(
                 icon: Icons.arrow_back,
-                onTap: () => Get.back(),
+                onTap: () => Get.back(), backgroundColor: const Color(0xFFE0E0E0), iconColor: const Color(0xFF616161),
               ),
             ),
 
@@ -70,8 +70,14 @@ class FarmMapView extends GetView<FarmMapController> {
               child: RoundIconButton(
                 icon: Icons.my_location,
                 onTap: () {
-                  // TODO: hook this up to actually recenter the map.
+                  Get.snackbar(
+                    'Location',
+                    'Current-location centering is not available yet.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
                 },
+                backgroundColor: const Color(0xFFE0E0E0), 
+                iconColor: const Color(0xFF616161),
               ),
             ),
 
@@ -126,7 +132,7 @@ class RoundIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const RoundIconButton({super.key, required this.icon, required this.onTap});
+  const RoundIconButton({super.key, required this.icon, required this.onTap, required Color backgroundColor, required Color iconColor});
 
   @override
   Widget build(BuildContext context) {

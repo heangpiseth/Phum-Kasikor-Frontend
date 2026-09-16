@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_cart_controller.dart';
 import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 
 enum ProductCategory {
@@ -36,8 +37,8 @@ extension SortOrderX on SortOrder {
 
 class FarmProductsController extends GetxController {
   FarmProductsController({
-    required List<ProductModel> allProducts,
-  }) : _allProducts = allProducts;
+    required this._allProducts,
+  });
 
   final List<ProductModel> _allProducts;
 
@@ -57,7 +58,7 @@ class FarmProductsController extends GetxController {
       filtered = List<ProductModel>.from(_allProducts);
     } else {
       filtered = _allProducts.where((product) {
-        return product.category.toLowerCase() ==
+        return product.category.name.toLowerCase() ==
             selectedCategory.value.name.toLowerCase();
       }).toList();
     }
@@ -115,10 +116,12 @@ class FarmProductsController extends GetxController {
 
   void addToCart(ProductModel product) {
     cartProductIds.add(product.id);
+    Get.find<CartController>().addProduct(product);
   }
 
   void removeFromCart(ProductModel product) {
     cartProductIds.remove(product.id);
+    Get.find<CartController>().removeProduct(product.id);
   }
 
   void clearCart() {

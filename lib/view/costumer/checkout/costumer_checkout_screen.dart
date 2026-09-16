@@ -11,16 +11,15 @@ class CheckoutView extends GetView<CheckoutController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Checkout'),
         leading: const BackButton(),
       ),
-
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Payment information
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -38,44 +37,32 @@ class CheckoutView extends GetView<CheckoutController> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Direct Farm Payment: You pay the farmer '
-                      'directly with no middleman escrow or '
-                      'platform fees.',
-                      style: TextStyle(
-                        fontSize: 12,
-                      ),
+                      'Direct Farm Payment: You pay the farmer directly '
+                      'with no middleman escrow or platform fees.',
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Delivery address
             _sectionTitle(
               'Delivery Address',
               trailing: 'Edit',
+              onTrailingTap: controller.editAddress,
             ),
-
             const SizedBox(height: 6),
-
             Obx(
               () => Text(
                 controller.deliveryAddress.value,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                ),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Delivery method
             _sectionTitle('Delivery Method'),
-
             const SizedBox(height: 8),
-
             Obx(
               () => Row(
                 children: [
@@ -83,40 +70,28 @@ class CheckoutView extends GetView<CheckoutController> {
                     child: _deliveryOption(
                       label: 'Standard',
                       subtitle: '2-3 Days • Free',
-                      selected:
-                          controller.deliveryMethod.value ==
-                              DeliveryMethod.standard,
-                      onTap: () {
-                        controller.setDeliveryMethod(
+                      selected: controller.deliveryMethod.value ==
                           DeliveryMethod.standard,
-                        );
-                      },
+                      onTap: () => controller
+                          .setDeliveryMethod(DeliveryMethod.standard),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: _deliveryOption(
                       label: 'Express',
                       subtitle: 'Same Day • \$3.00',
-                      selected:
-                          controller.deliveryMethod.value ==
-                              DeliveryMethod.express,
-                      onTap: () {
-                        controller.setDeliveryMethod(
+                      selected: controller.deliveryMethod.value ==
                           DeliveryMethod.express,
-                        );
-                      },
+                      onTap: () => controller
+                          .setDeliveryMethod(DeliveryMethod.express),
                     ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Order summary
             Obx(
               () => _sectionTitle(
                 '${controller.cart.itemCount} Items Selected',
@@ -124,20 +99,13 @@ class CheckoutView extends GetView<CheckoutController> {
                     '\$${controller.cart.subtotal.toStringAsFixed(2)}',
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Payment method
             const Text(
               'Pay Farmer Directly',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
-
             const SizedBox(height: 4),
-
             const Text(
               "Direct payment to farm's account",
               style: TextStyle(
@@ -145,57 +113,44 @@ class CheckoutView extends GetView<CheckoutController> {
                 color: AppColors.textSecondary,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Obx(
-              () => Column(
-                children: PaymentMethod.values.map((method) {
-                  return RadioListTile<PaymentMethod>(
-                    contentPadding: EdgeInsets.zero,
-                    value: method,
-                    groupValue:
-                        controller.selectedPayment.value,
-                    activeColor: AppColors.primary,
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.selectPayment(value);
-                      }
-                    },
-                    title: Text(method.label),
-                    subtitle: Text(
-                      method.subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
+              () => RadioGroup<PaymentMethod>(
+                groupValue: controller.selectedPayment.value,
+                onChanged: (value) {
+                  if (value != null) controller.selectPayment(value);
+                },
+                child: Column(
+                  children: PaymentMethod.values.map((method) {
+                    return RadioListTile<PaymentMethod>(
+                      contentPadding: EdgeInsets.zero,
+                      value: method,
+                      activeColor: AppColors.primary,
+                      title: Text(method.label),
+                      subtitle: Text(
+                        method.subtitle,
+                        style: const TextStyle(fontSize: 12),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
-
             const SizedBox(height: 12),
 
-            // Order note
             TextField(
               maxLines: 2,
               decoration: const InputDecoration(
-                hintText:
-                    'Add delivery requests or instructions...',
+                hintText: 'Add delivery requests or instructions...',
                 labelText: 'Order Note (Optional)',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) {
-                controller.orderNote.value = value;
-              },
+              onChanged: (value) => controller.orderNote.value = value,
             ),
-
             const SizedBox(height: 24),
           ],
         ),
       ),
-
-      // Place order button
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -204,10 +159,11 @@ class CheckoutView extends GetView<CheckoutController> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: controller.placeOrder ,
+                onPressed: controller.cart.itemCount == 0
+                    ? null
+                    : controller.placeOrder,
                 child: Text(
-                  'Place Order — '
-                  '\$${controller.total.toStringAsFixed(2)}',
+                  'Place Order — \$${controller.total.toStringAsFixed(2)}',
                 ),
               ),
             ),
@@ -220,10 +176,10 @@ class CheckoutView extends GetView<CheckoutController> {
   Widget _sectionTitle(
     String title, {
     String? trailing,
+    VoidCallback? onTrailingTap,
   }) {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
@@ -234,15 +190,17 @@ class CheckoutView extends GetView<CheckoutController> {
             ),
           ),
         ),
-
         if (trailing != null) ...[
           const SizedBox(width: 12),
-          Text(
-            trailing,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onTrailingTap,
+            child: Text(
+              trailing,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -264,32 +222,24 @@ class CheckoutView extends GetView<CheckoutController> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primaryLight
-                : Colors.white,
+            color: selected ? AppColors.primaryLight : Colors.white,
             border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : AppColors.divider,
+              color: selected ? AppColors.primary : AppColors.divider,
               width: selected ? 1.5 : 1,
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-
                   if (selected)
                     const Icon(
                       Icons.check_circle,
@@ -298,9 +248,7 @@ class CheckoutView extends GetView<CheckoutController> {
                     ),
                 ],
               ),
-
               const SizedBox(height: 4),
-
               Text(
                 subtitle,
                 style: const TextStyle(

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 // ============================================================
@@ -9,6 +8,14 @@ import 'package:phum_kasikors/controller/costumer/costumer_home_controller.dart'
 import 'package:phum_kasikors/controller/costumer/costumer_cart_controller.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_checkout_controller.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_payment_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_explore_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_search_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_farm_detail_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_product_detail_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_orders_list_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_profile_controller.dart';
+import 'package:phum_kasikors/controller/costumer/farm_map_controller.dart';
+import 'package:phum_kasikors/controller/costumer/costumer_order_tracking_controller.dart';
 
 // ============================================================
 // AUTH
@@ -27,22 +34,28 @@ import 'package:phum_kasikors/view/Auth/location_setup_screen.dart';
 // CUSTOMER
 // ============================================================
 
-import 'package:phum_kasikors/view/costumer/costumer_home_screen.dart';
 import 'package:phum_kasikors/view/costumer/cart/costumer_cart_screen.dart';
 import 'package:phum_kasikors/view/costumer/checkout/costumer_checkout_screen.dart';
 import 'package:phum_kasikors/view/costumer/checkout/costumer_payment_screen.dart';
 import 'package:phum_kasikors/view/costumer/marketplace/costumer_farm_map_view.dart';
+import 'package:phum_kasikors/view/costumer/marketplace/costumer_explore_view.dart';
+import 'package:phum_kasikors/view/costumer/marketplace/costumer_search_filter_view.dart';
+import 'package:phum_kasikors/view/costumer/marketplace/costumer_farm_detail_view.dart';
+import 'package:phum_kasikors/view/costumer/marketplace/costumer_product_detail_view.dart';
 import 'package:phum_kasikors/view/costumer/marketplace/costumer_farm_product_screen.dart';
 import 'package:phum_kasikors/view/costumer/orders/costumer_order_success_screen.dart';
 import 'package:phum_kasikors/view/costumer/orders/costumer_order_tracking_view.dart';
+import 'package:phum_kasikors/view/costumer/orders/costumer_order_list_screen.dart';
 import 'package:phum_kasikors/view/costumer/profile/costumer_profile_screen.dart';
+import 'package:phum_kasikors/widgets/costumer/costumer_buttom_nvb.dart';
+import 'package:phum_kasikors/view/ai_assistant/ai_assistant_chat_screen.dart';
 
 // ============================================================
 // FARMER
 // ============================================================
 
-import 'package:phum_kasikors/view/farmer/farmer_home_screen.dart';
 import 'package:phum_kasikors/view/farmer/Farm/farmer_farm_profile.dart';
+import 'package:phum_kasikors/view/farmer/Farm/farmer_my_farm.dart';
 import 'package:phum_kasikors/view/farmer/earning/farmer_earnings_screen.dart';
 import 'package:phum_kasikors/view/farmer/orders/farmer_order_detil_screen.dart';
 import 'package:phum_kasikors/view/farmer/orders/farmer_order_screen.dart';
@@ -53,6 +66,7 @@ import 'package:phum_kasikors/view/farmer/product/farmer_crop_screen.dart';
 import 'package:phum_kasikors/view/farmer/product/farmer_product_preview_screen.dart';
 import 'package:phum_kasikors/view/farmer/product/farmer_product_screen.dart';
 import 'package:phum_kasikors/view/farmer/profile/farmer_profile_screen.dart';
+import 'package:phum_kasikors/widgets/farmer/farmer_bottom_nav.dart';
 
 // ============================================================
 // ROUTES
@@ -115,14 +129,17 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerHomescreen,
-      page: () => const CostumerHomeScreen(),
+      page: () => MainNavView(),
       binding: BindingsBuilder(() {
+
+        // Home Controller
         if (!Get.isRegistered<HomeController>()) {
           Get.put<HomeController>(
             HomeController(),
           );
         }
 
+        // Cart Controller
         if (!Get.isRegistered<CartController>()) {
           Get.put<CartController>(
             CartController(),
@@ -137,10 +154,10 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerExplorescreen,
-      page: () => const Scaffold(
-        body: Center(
-          child: Text('Customer Explore'),
-        ),
+      page: () => const ExploreView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(ExploreController()),
       ),
     ),
 
@@ -150,10 +167,10 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerSearchFilterscreen,
-      page: () => const Scaffold(
-        body: Center(
-          child: Text('Search & Filter'),
-        ),
+      page: () => const SearchView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(SearchFilterController()),
       ),
     ),
 
@@ -163,10 +180,10 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerProductDetailscreen,
-      page: () => const Scaffold(
-        body: Center(
-          child: Text('Product Details'),
-        ),
+      page: () => const CostumerProductDetailView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(ProductDetailController()),
       ),
     ),
 
@@ -176,10 +193,10 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerFarmDetailscreen,
-      page: () => const Scaffold(
-        body: Center(
-          child: Text('Farm Details'),
-        ),
+      page: () => const CostumerFarmDetailView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(FarmDetailController()),
       ),
     ),
 
@@ -190,6 +207,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.costumerFarmMapscreen,
       page: () => const FarmMapView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(FarmMapController()),
+      ),
     ),
 
     // ==========================================================
@@ -208,6 +229,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.costumerProfilescreen,
       page: () => const CostumerProfileScreen(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(ProfileController()),
+      ),
     ),
 
     // ==========================================================
@@ -216,14 +241,20 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.costumerCartscreen,
-      page: () => const CartView(),
-      binding: BindingsBuilder(() {
-        if (!Get.isRegistered<CartController>()) {
-          Get.put<CartController>(
-            CartController(),
-          );
-        }
-      }),
+      page: () => const CustomerCartScreen(),
+    ),
+
+    // ==========================================================
+    // CUSTOMER ORDERS
+    // ==========================================================
+
+    GetPage(
+      name: '/costumer/orders',
+      page: () => const OrdersListView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(OrdersListController()),
+      ),
     ),
 
     // ==========================================================
@@ -234,12 +265,15 @@ class AppPages {
       name: AppRoutes.costumerCheckoutscreen,
       page: () => const CheckoutView(),
       binding: BindingsBuilder(() {
+
+        // Cart Controller
         if (!Get.isRegistered<CartController>()) {
           Get.put<CartController>(
             CartController(),
           );
         }
 
+        // Checkout Controller
         if (!Get.isRegistered<CheckoutController>()) {
           Get.put<CheckoutController>(
             CheckoutController(),
@@ -256,18 +290,22 @@ class AppPages {
       name: AppRoutes.costumerPaymentscreen,
       page: () => const CostumerPaymentScreen(),
       binding: BindingsBuilder(() {
+
+        // Cart Controller
         if (!Get.isRegistered<CartController>()) {
           Get.put<CartController>(
             CartController(),
           );
         }
 
+        // Checkout Controller
         if (!Get.isRegistered<CheckoutController>()) {
           Get.put<CheckoutController>(
             CheckoutController(),
           );
         }
 
+        // Payment Controller
         if (!Get.isRegistered<PaymentController>()) {
           Get.put<PaymentController>(
             PaymentController(),
@@ -292,6 +330,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.costumerOrderTrackingscreen,
       page: () => const OrderTrackingView(),
+      binding: BindingsBuilder(
+        // ignore: void_checks
+        () => Get.put(OrderTrackingController()),
+      ),
     ),
 
     // ==========================================================
@@ -300,7 +342,14 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.farmerHome,
-      page: () => const FarmerHomeScreen(),
+      page: () => const FarmerBottomNav(),
+    ),
+
+    GetPage(
+      name: AppRoutes.aiAssistant,
+      page: () => AiAssistantChatScreen(
+        isFarmer: Get.arguments as bool? ?? false,
+      ),
     ),
 
     // ==========================================================
@@ -327,8 +376,8 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.farmerProductPreview,
-      page: () => const FarmerProductPreviewScreen(
-        productId: '',
+      page: () => FarmerProductPreviewScreen(
+        productId: Get.arguments as String? ?? '',
       ),
     ),
 
@@ -348,8 +397,8 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.farmerCropDetail,
-      page: () => const FarmerCropDetailScreen(
-        cropId: '',
+      page: () => FarmerCropDetailScreen(
+        cropId: Get.arguments as String? ?? '',
       ),
     ),
 
@@ -373,7 +422,7 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.farmerMyFarm,
-      page: () => const FarmerFarmProfile(),
+      page: () => const FarmerMyFarmScreen(),
     ),
 
     // ==========================================================
@@ -387,8 +436,8 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.farmerOrderDetail,
-      page: () => const FarmerOrderDetailScreen(
-        orderId: '',
+      page: () => FarmerOrderDetailScreen(
+        orderId: Get.arguments as String? ?? '',
       ),
     ),
 

@@ -4,6 +4,7 @@ import 'package:phum_kasikors/color/color.dart';
 import 'package:phum_kasikors/controller/farmer/famer_controller.dart';
 import 'package:phum_kasikors/view/farmer/product/farmer_add_crop_screen.dart';
 import 'package:phum_kasikors/view/farmer/product/farmer_crop_screen.dart';
+import 'package:phum_kasikors/widgets/ai_assistant/ai_assistant_compact_card.dart';
 
 
 class FarmerHomeScreen extends StatelessWidget {
@@ -50,6 +51,8 @@ class FarmerHomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 22),
+            const AiAssistantCompactCard(isFarmer: true),
             const SizedBox(height: 22),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

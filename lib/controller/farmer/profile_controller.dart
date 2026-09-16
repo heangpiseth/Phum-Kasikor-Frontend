@@ -34,13 +34,11 @@ class FarmerProfileController extends GetxController {
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      await Future.delayed(const Duration(seconds: 1));
-
       profile.value = FarmerProfileModel(
-        name: 'Sok Chanthan',
-        role: 'Farmer',
+        name: 'Sokha Nam',
+        role: 'Certified Organic Farmer',
         image: 'assets/images/profile.png',
-        products: 48,
+        products: 24,
         orders: 156,
         rating: 4.8,
       );
@@ -54,7 +52,7 @@ class FarmerProfileController extends GetxController {
 
       userInfo.value = UserModel(
         id: 'user-1',
-        name: 'Sok Chanthan',
+        name: 'Sokha Nam',
         phone: '0987654321',
         role: UserRole.farmer,
         email: 'sokchanthan@email.com',

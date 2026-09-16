@@ -10,9 +10,15 @@ class FarmerCropDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final crop = Get.find<FarmerController>().crops.firstWhere(
-      (item) => item.id == cropId,
-    );
+    final crops = Get.find<FarmerController>().crops;
+    final matchingCrops = crops.where((item) => item.id == cropId);
+    if (matchingCrops.isEmpty) {
+      return const FarmerPage(
+        title: 'Crop Details',
+        child: Center(child: Text('Crop not found.')),
+      );
+    }
+    final crop = matchingCrops.first;
     final daysGrowing = DateTime.now()
         .difference(crop.plantedAt)
         .inDays

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phum_kasikors/controller/farmer/earnings_controller.dart';
-import 'package:phum_kasikors/widgets/farmer/farmer_bottom_nav.dart';
 
 class EarningsScreen extends StatelessWidget {
   EarningsScreen({super.key});
 
-  final EarningsController controller = Get.put(EarningsController());
+  final EarningsController controller = Get.find<EarningsController>();
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +60,6 @@ class EarningsScreen extends StatelessWidget {
           ),
         ),
       ),
-
-      bottomNavigationBar: FarmerBottomNav(),
     );
   }
 

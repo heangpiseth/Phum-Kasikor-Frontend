@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:phum_kasikors/model/customer/costumer_order_model.dart';
 
 class OrderTrackingController extends GetxController {
-  late final OrderModel order;
+  OrderModel? order;
 
   final steps = const [
     'Order Placed',
@@ -15,8 +15,11 @@ class OrderTrackingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    order = Get.arguments as OrderModel;
+    final arguments = Get.arguments;
+    if (arguments is OrderModel) {
+      order = arguments;
+    }
   }
 
-  int get currentStepIndex => order.status.index;
+  int get currentStepIndex => order?.status.index ?? 0;
 }

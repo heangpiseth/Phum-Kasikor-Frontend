@@ -189,7 +189,11 @@ class OrderSuccessView extends StatelessWidget {
 
               TextButton(
                 onPressed: () {
-                  // TODO: Download receipt
+                  Get.snackbar(
+                    'Receipt',
+                    'Receipt downloads are not available yet.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
                 },
                 child: const Text('Download Receipt'),
               ),

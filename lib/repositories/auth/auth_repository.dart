@@ -15,7 +15,9 @@ class AuthRepository {
     try {
       final json = await ApiClient.post('auth/register', {
         'name': name,
+        // ignore: use_null_aware_elements
         if (email != null) 'email': email,
+        // ignore: use_null_aware_elements
         if (phone != null) 'phone': phone,
         'password': password,
       });
@@ -103,13 +105,19 @@ class AuthRepository {
   }) async {
     try {
       final json = await ApiClient.put('profile/setup', {
+        // ignore: use_null_aware_elements
         if (name != null) 'name': name,
+        // ignore: use_null_aware_elements
         if (displayName != null) 'display_name': displayName,
+        // ignore: use_null_aware_elements
         if (bio != null) 'bio': bio,
+        // ignore: use_null_aware_elements
         if (gender != null) 'gender': gender,
         if (dateOfBirth != null)
           'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+        // ignore: use_null_aware_elements
         if (profileImage != null) 'profile_image': profileImage,
+        // ignore: use_null_aware_elements
         if (farmName != null) 'farm_name': farmName,
       });
       return ApiResponse.success(UserModel.fromJson(json));
@@ -128,9 +136,13 @@ class AuthRepository {
     try {
       final json = await ApiClient.put('profile/location', {
         'province': province,
+        // ignore: use_null_aware_elements
         if (district != null) 'district': district,
+        // ignore: use_null_aware_elements
         if (commune != null) 'commune': commune,
+        // ignore: use_null_aware_elements
         if (latitude != null) 'latitude': latitude,
+        // ignore: use_null_aware_elements
         if (longitude != null) 'longitude': longitude,
       });
       return ApiResponse.success(UserModel.fromJson(json));

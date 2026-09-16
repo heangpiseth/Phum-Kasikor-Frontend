@@ -1,7 +1,7 @@
 // farm_card.dart
 import 'package:flutter/material.dart';
 import 'package:phum_kasikors/color/color.dart';
-import 'package:phum_kasikors/model/customer/costumer_farm_model.dart';
+import 'package:phum_kasikors/model/customer/costumer_home_model.dart';
 import 'package:phum_kasikors/widgets/costumer/rating_stars.dart';
 
 /// Horizontal image card used in "Featured Farms" and "Near You" lists.
@@ -10,7 +10,7 @@ class FarmCard extends StatelessWidget {
   final VoidCallback? onTap;
   final double width;
 
-  const FarmCard({super.key, required this.farm, this.onTap, this.width = 160});
+  const FarmCard({super.key, required this.farm, this.onTap, this.width = 140});
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +24,15 @@ class FarmCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: AspectRatio(
-                aspectRatio: 1.4,
-                child: Image.network(farm.imageUrl, fit: BoxFit.cover),
+                aspectRatio: 1.7,
+                child: Image.network(
+                  farm.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: AppColors.divider,
+                    child: Icon(Icons.agriculture),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 6),

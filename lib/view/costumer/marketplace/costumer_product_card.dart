@@ -1,130 +1,185 @@
-// product_card.dart
 import 'package:flutter/material.dart';
-import 'package:phum_kasikors/color/color.dart';
-import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 
-/// Grid-style product card with a quick "+" add-to-cart button,
-/// as seen on Explore, Farm Products and Search screens.
+import 'package:phum_kasikors/color/color.dart';
+
 class ProductCard extends StatelessWidget {
-  final ProductModel product;
+  /// Both home and marketplace products expose these display fields.
+  final dynamic product;
   final VoidCallback? onTap;
   final VoidCallback? onAdd;
 
-  const ProductCard({super.key, required this.product, this.onTap, this.onAdd});
+  const ProductCard({
+    super.key,
+    required this.product,
+    this.onTap,
+    this.onAdd,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isLow = product.stock == StockStatus.lowStock;
-    final isOut = product.stock == StockStatus.outOfStock;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.divider),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 1.3,
-                  child: Image.network(product.imageUrl, fit: BoxFit.cover),
-                ),
-                if (isLow || isOut)
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isOut ? AppColors.error : AppColors.warning,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        isOut ? 'Out of Stock' : 'Low Stock',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'In Stock',
-                        style: TextStyle(color: Colors.white, fontSize: 9),
-                      ),
-                    ),
-                  ),
-              ],
+          border: Border.all(
+            color: AppColors.divider,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            // ==================================================
+            // IMAGE
+            // ==================================================
+
+            Expanded(
+              flex: 5,
+              child: Stack(
                 children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.only(
+                      topLeft: Radius.circular(14),
+                      topRight: Radius.circular(14),
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Image.network(
+                        product.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (context, error, stackTrace) {
+                          return Container(
+                            color: AppColors.divider,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 35,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.priceLabel,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+
+                  // ADD BUTTON
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: GestureDetector(
+                      onTap: onAdd,
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius:
+                              BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 22,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: isOut ? null : onAdd,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: isOut
-                                ? AppColors.divider
-                                : AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
+              ),
+            ),
+
+            // ==================================================
+            // CONTENT
+            // ==================================================
+
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(9),
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      product.farmName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color:
+                            AppColors.textSecondary,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          product.priceLocal,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              size: 13,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              product.rating.toString(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      'per ${product.unit}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color:
+                            AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

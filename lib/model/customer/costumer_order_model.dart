@@ -1,12 +1,33 @@
 // order_model.dart
 
-import 'package:phum_kasikors/model/customer/costumer_cart_item_model.dart';
-
 enum PaymentMethod { abaBank, wingMoney, bakongKhqr, creditCard, cashOnDelivery }
 
 enum DeliveryMethod { standard, express }
 
 enum OrderStatus { placed, paymentConfirmed, preparing, outForDelivery, delivered }
+
+class OrderItem {
+  const OrderItem({
+    required this.productId,
+    required this.productName,
+    required this.quantity,
+    required this.unitPrice,
+  });
+
+  final String productId;
+  final String productName;
+  final int quantity;
+  final double unitPrice;
+
+  double get lineTotal => unitPrice * quantity;
+
+  factory OrderItem.fromCartItem(dynamic cartItem) => OrderItem(
+        productId: cartItem.product.id as String,
+        productName: cartItem.product.name as String,
+        quantity: cartItem.quantity as int,
+        unitPrice: (cartItem.product.price as num).toDouble(),
+      );
+}
 
 extension PaymentMethodX on PaymentMethod {
   String get label {
@@ -43,7 +64,7 @@ extension PaymentMethodX on PaymentMethod {
 class OrderModel {
   final String id; // e.g. ORD-2024-001
   final DateTime date;
-  final List<CartItemModel> items;
+  final List<OrderItem> items;
   final String deliveryAddress;
   final DeliveryMethod deliveryMethod;
   final PaymentMethod paymentMethod;
@@ -51,6 +72,7 @@ class OrderModel {
   final String farmName;
   final String farmerName;
   final String farmerPhone;
+  final String note;
   OrderStatus status;
 
   OrderModel({
@@ -63,11 +85,15 @@ class OrderModel {
     required this.farmName,
     required this.farmerName,
     required this.farmerPhone,
+    this.note = '',
     this.deliveryFee = 2.0,
     this.status = OrderStatus.placed,
   });
 
-  double get subtotal => items.fold(0, (sum, item) => sum + item.lineTotal);
+  double get subtotal => items.fold<double>(
+        0,
+        (sum, item) => sum + item.lineTotal,
+      );
   double get total => subtotal + deliveryFee;
   int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
 }

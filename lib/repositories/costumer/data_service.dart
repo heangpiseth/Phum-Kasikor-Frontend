@@ -22,7 +22,7 @@ class MockDataService extends GetxService {
       productCount: 24,
       ownerName: 'Sokha Vann',
       latitude: 11.4867,
-      longitude: 104.9282,
+      longitude: 104.9282, description: 'Sokha\'s Organic Farm is a family-owned farm dedicated to sustainable agriculture. We grow a variety of organic fruits and vegetables, ensuring the highest quality produce for our customers. Our farm is committed to eco-friendly practices and community engagement.',
       
     ),
     const FarmModel(
@@ -32,7 +32,7 @@ class MockDataService extends GetxService {
       imageUrl: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800',
       rating: 4.9,
       reviewCount: 98,
-      distanceKm: 2.3,
+      distanceKm: 2.3, description: 'Battambang Sweet Farm specializes in growing a variety of sweet fruits, including mangoes, pineapples, and bananas. Our farm is known for its commitment to organic farming methods and providing fresh, high-quality produce to our customers.',
     ),
     const FarmModel(
       id: 'farm_prekleap',
@@ -42,7 +42,7 @@ class MockDataService extends GetxService {
       rating: 4.7,
       reviewCount: 61,
       distanceKm: 1.5,
-      productCount: 18,
+      productCount: 18, description: '  Prek Leap Eco Farm is dedicated to sustainable farming practices, focusing on eco-friendly cultivation of vegetables and herbs. We prioritize environmental stewardship and community involvement, offering fresh, organic produce directly from our farm to your table.',
     ),
   ];
 

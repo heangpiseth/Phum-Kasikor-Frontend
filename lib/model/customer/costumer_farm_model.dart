@@ -4,6 +4,7 @@ class FarmModel {
   final String province;
   final String imageUrl;
   final double rating;
+  final String description;
   final int reviewCount;
   final int followerCount;
   final double distanceKm;
@@ -16,7 +17,6 @@ class FarmModel {
   final double latitude;
   final double longitude;
   final String about;
-
   const FarmModel({
     required this.id,
     required this.name,
@@ -24,6 +24,7 @@ class FarmModel {
     required this.imageUrl,
     required this.rating,
     required this.reviewCount,
+    required this.description,
     this.followerCount = 0,
     this.distanceKm = 0,
     this.isVerifiedOrganic = true,
@@ -37,5 +38,4 @@ class FarmModel {
     this.about = '',
   });
 
-  String get description => "";
 }

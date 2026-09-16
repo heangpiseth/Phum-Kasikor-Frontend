@@ -1,63 +1,135 @@
 import 'package:get/get.dart';
-import 'package:phum_kasikors/core/routes/app_routes.dart';
-import 'package:phum_kasikors/model/customer/costumer_cart_item_model.dart';
-import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 
-/// Kept alive for the whole app session (registered as permanent in main.dart)
-/// so the cart badge / contents survive navigation between tabs.
+class CartItem {
+  final dynamic product;
+  int quantity;
+
+  CartItem({
+    required this.product,
+    this.quantity = 1,
+  });
+
+  double get totalPrice {
+    return product.price * quantity;
+  }
+
+  double get lineTotal => totalPrice;
+
+}
+
 class CartController extends GetxController {
-  final items = <CartItemModel>[].obs;
-  final promoCode = ''.obs;
-  final deliveryFee = 2.0.obs;
+  final RxList<CartItem> items = <CartItem>[].obs;
 
-  int get itemCount => items.fold(0, (sum, i) => sum + i.quantity);
-  double get subtotal => items.fold(0.0, (sum, i) => sum + i.lineTotal);
-  double get total => subtotal + (items.isEmpty ? 0 : deliveryFee.value);
+  // ============================================================
+  // ADD PRODUCT
+  // ============================================================
 
-  void addProduct(ProductModel product, {int quantity = 1}) {
-    final index = items.indexWhere((i) => i.product.id == product.id);
-    if (index >= 0) {
+  void addProduct(dynamic product, {int quantity = 1}) {
+    final index = items.indexWhere(
+      (item) => item.product.id == product.id,
+    );
+
+    if (index != -1) {
       items[index].quantity += quantity;
       items.refresh();
     } else {
-      items.add(CartItemModel(product: product, quantity: quantity));
+      items.add(
+        CartItem(
+          product: product,
+          quantity: quantity,
+        ),
+      );
     }
+
+    Get.snackbar(
+      'Cart',
+      '${product.name} added to cart',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 1),
+    );
   }
 
-  void increment(String productId) {
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
-    if (item != null) {
-      item.quantity++;
+  // ============================================================
+  // REMOVE PRODUCT
+  // ============================================================
+
+  void removeProduct(String productId) {
+    items.removeWhere(
+      (item) => item.product.id == productId,
+    );
+  }
+
+  // ============================================================
+  // INCREASE
+  // ============================================================
+
+  void increaseQuantity(String productId) {
+    final index = items.indexWhere(
+      (item) => item.product.id == productId,
+    );
+
+    if (index != -1) {
+      items[index].quantity++;
       items.refresh();
     }
   }
 
-  void decrement(String productId) {
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
-    if (item != null) {
-      if (item.quantity > 1) {
-        item.quantity--;
+  // ============================================================
+  // DECREASE
+  // ============================================================
+
+  void decreaseQuantity(String productId) {
+    final index = items.indexWhere(
+      (item) => item.product.id == productId,
+    );
+
+    if (index != -1) {
+      if (items[index].quantity > 1) {
+        items[index].quantity--;
+        items.refresh();
       } else {
-        items.remove(item);
+        items.removeAt(index);
       }
-      items.refresh();
     }
   }
 
-  void removeItem(String productId) {
-    items.removeWhere((i) => i.product.id == productId);
+  // ============================================================
+  // CLEAR
+  // ============================================================
+
+  void clearCart() {
+    items.clear();
   }
 
-  void clearCart() => items.clear();
+  // ============================================================
+  // TOTAL ITEMS
+  // ============================================================
 
-  void applyPromoCode(String code) {
-    promoCode.value = code;
-    // Hook real promo validation here.
-    Get.snackbar('Promo code', 'Applied "$code"', snackPosition: SnackPosition.BOTTOM);
+  int get totalItems {
+    return items.fold(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
   }
 
-  // TODO: verify the route constant name — used
-  // AppRoutes.costumerCheckoutscreen to match app_pages.dart from earlier;
-  // rename if your actual checkout route constant differs.
-  void goToCheckout() => Get.toNamed(AppRoutes.costumerCheckoutscreen);
+  int get itemCount => totalItems;
+
+  double get subtotal => totalPrice;
+
+  // ============================================================
+  // TOTAL PRICE
+  // ============================================================
+
+  double get totalPrice {
+    return items.fold(
+      0,
+      (sum, item) => sum + item.totalPrice,
+    );
+  }
+
+  // ============================================================
+  // IS EMPTY
+  // ============================================================
+
+  bool get isEmpty => items.isEmpty;
 }

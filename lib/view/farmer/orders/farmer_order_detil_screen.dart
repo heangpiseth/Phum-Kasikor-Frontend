@@ -12,7 +12,14 @@ class FarmerOrderDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final farmer = Get.find<FarmerController>();
     return Obx(() {
-      final order = farmer.orders.firstWhere((item) => item.id == orderId);
+      final matchingOrders = farmer.orders.where((item) => item.id == orderId);
+      if (matchingOrders.isEmpty) {
+        return const FarmerPage(
+          title: 'Order details',
+          child: Center(child: Text('Order not found.')),
+        );
+      }
+      final order = matchingOrders.first;
       return FarmerPage(
         title: 'Order ${order.id}',
         child: ListView(

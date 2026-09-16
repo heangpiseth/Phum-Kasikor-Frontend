@@ -7,8 +7,7 @@ import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/core/stroage/token_stroage.dart';
 import 'package:phum_kasikors/model/farmer/user_model.dart';
 
-import 'package:phum_kasikors/view/costumer/costumer_home_screen.dart';
-import 'package:phum_kasikors/view/Farmer/farmer_home_screen.dart';
+
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
@@ -1145,10 +1144,10 @@ class AuthController extends GetxController {
       '>>> Going home with role: ${role.name}',
     );
 
-    Get.offAll(
-      () => role == UserRole.farmer
-          ? const FarmerHomeScreen()
-          : const CostumerHomeScreen(),
+    Get.offAllNamed(
+      role == UserRole.farmer
+          ? AppRoutes.farmerHome
+          : AppRoutes.costumerHomescreen,
     );
   }
 

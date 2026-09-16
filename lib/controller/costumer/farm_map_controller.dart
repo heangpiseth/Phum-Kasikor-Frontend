@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/model/customer/costumer_farm_model.dart';
 import 'package:phum_kasikors/repositories/costumer/data_service.dart';
 
@@ -31,12 +32,16 @@ class FarmMapController extends GetxController {
     Get.snackbar('Directions', 'Opening directions to ${selectedFarm.name}...');
   }
 
-  void visitStorefront(dynamic Routes) =>
-      Get.toNamed(Routes.farmDetail, arguments: selectedFarm.id);
+  void visitStorefront() =>
+      Get.toNamed(AppRoutes.costumerFarmDetailscreen, arguments: selectedFarm.id);
 
-  void openFarmProducts(id) {}
+  void openFarmProducts(String farmId) => Get.toNamed(
+        AppRoutes.costumerFarmProductsscreen,
+        arguments: _dataService.productsByFarm(farmId),
+      );
 
-  void openFarmDetail(id) {}
+  void openFarmDetail(String farmId) =>
+      Get.toNamed(AppRoutes.costumerFarmDetailscreen, arguments: farmId);
 }
 
 

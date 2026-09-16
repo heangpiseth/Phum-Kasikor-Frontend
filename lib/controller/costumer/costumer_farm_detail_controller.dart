@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:phum_kasikors/model/customer/costumer_farm_model.dart';
 import 'package:phum_kasikors/model/customer/costumer_review_model.dart';
-import 'package:phum_kasikors/model/farmer/product_model.dart';
+import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 import 'package:phum_kasikors/repositories/costumer/data_service.dart';
 
 
@@ -21,7 +21,7 @@ class FarmDetailController extends GetxController {
     super.onInit();
     final farmId = Get.arguments as String? ?? _dataService.farms.first.id;
     farm = _dataService.farmById(farmId);
-    products.assignAll(_dataService.productsByFarm(farmId) as Iterable<ProductModel>);
+    products.assignAll(_dataService.productsByFarm(farmId));
     reviews = _dataService.reviews;
   }
 
@@ -35,9 +35,9 @@ class FarmDetailController extends GetxController {
           .where((p) => p.category.name.toLowerCase().contains(category.toLowerCase()))
           .toList();
     }
-    products.assignAll(list as Iterable<ProductModel>);
+    products.assignAll(list);
   }
 
-  void openProduct(ProductModel product, dynamic Routes) =>
-      Get.toNamed(Routes.productDetail, arguments: product);
+  void openProduct(ProductModel product) =>
+      Get.toNamed('/costumer/product-detailscreen', arguments: product);
 }

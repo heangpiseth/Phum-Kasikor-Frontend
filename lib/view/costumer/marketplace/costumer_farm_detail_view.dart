@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:phum_kasikors/color/color.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_cart_controller.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_farm_detail_controller.dart';
@@ -13,10 +14,12 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
   @override
   Widget build(BuildContext context) {
     final cart = Get.find<CartController>();
+    final farm = controller.farm;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: AppColors.background,
         body: NestedScrollView(
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
@@ -24,7 +27,14 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
               pinned: true,
               leading: const BackButton(color: Colors.white),
               flexibleSpace: FlexibleSpaceBar(
-                background: Image.network(controller.farm.imageUrl, fit: BoxFit.cover),
+                background: Image.network(
+                  farm.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: AppColors.divider,
+                    child: const Icon(Icons.agriculture, size: 48),
+                  ),
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -39,41 +49,67 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
                           child: Row(
                             children: [
                               Flexible(
-                                child: Text(controller.farm.name,
-                                    style: const TextStyle(
-                                        fontSize: 18, fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  farm.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.verified, color: AppColors.primary, size: 18),
+                              const Icon(
+                                Icons.verified,
+                                color: AppColors.primary,
+                                size: 18,
+                              ),
                             ],
                           ),
                         ),
-                        Obx(() => OutlinedButton(
-                              onPressed: controller.toggleFollow,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor:
-                                    controller.isFollowing.value ? Colors.white : AppColors.primary,
-                                backgroundColor: controller.isFollowing.value
-                                    ? AppColors.primary
-                                    : Colors.transparent,
-                                side: const BorderSide(color: AppColors.primary),
-                              ),
-                              child: Text(controller.isFollowing.value ? 'Following' : 'Follow'),
-                            )),
+                        Obx(
+                          () => OutlinedButton(
+                            onPressed: controller.toggleFollow,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: controller.isFollowing.value
+                                  ? Colors.white
+                                  : AppColors.primary,
+                              backgroundColor: controller.isFollowing.value
+                                  ? AppColors.primary
+                                  : Colors.transparent,
+                              side: const BorderSide(color: AppColors.primary),
+                            ),
+                            child: Text(
+                              controller.isFollowing.value
+                                  ? 'Following'
+                                  : 'Follow',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('${controller.farm.province} • Verified Organic Certified ✓',
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      '${farm.province} • Verified Organic Certified ✓',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
                         RatingStars(
-                            rating: controller.farm.rating,
-                            reviewCount: controller.farm.reviewCount),
+                          rating: farm.rating,
+                          reviewCount: farm.reviewCount,
+                        ),
                         const SizedBox(width: 10),
-                        Text('${controller.farm.productCount} Followers',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(
+                          '${farm.productCount} Products',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -112,58 +148,83 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
 class _ProductsTab extends StatelessWidget {
   final FarmDetailController controller;
   final CartController cart;
+
   const _ProductsTab({required this.controller, required this.cart});
+
+  static const _categories = ['All', 'Vegetables', 'Fruits', 'Rice'];
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Obx(() => SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: ['All', 'Vegetables', 'Fruits', 'Grains']
-                    .map((c) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(c),
-                            selected: controller.selectedCategory.value == c,
-                            onSelected: (_) => controller.filterByCategory(c),
-                            selectedColor: AppColors.primary,
-                            labelStyle: TextStyle(
-                              color: controller.selectedCategory.value == c
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            )),
-        const SizedBox(height: 8),
-        Text('Sorting: ${controller.sortBy.value}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        const SizedBox(height: 10),
-        Obx(() => GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: controller.products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.78,
-              ),
+        Obx(
+          () => SizedBox(
+            height: 36,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _categories.length,
               itemBuilder: (_, i) {
-                final p = controller.products[i];
-                return ProductCard(
-                  product: (  p as ProductModel),
-                  onTap: () => controller.openProduct(p, Get.routing),
-                  onAdd: () => cart.addProduct(p as ProductModel),
+                final c = _categories[i];
+                final selected = controller.selectedCategory.value == c;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(c),
+                    selected: selected,
+                    onSelected: (_) => controller.filterByCategory(c),
+                    selectedColor: AppColors.primary,
+                    backgroundColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color:
+                          selected ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
                 );
               },
-            )),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Obx(
+          () => Text(
+            'Sorting: ${controller.sortBy.value}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Obx(() {
+          if (controller.products.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('No products in this category')),
+            );
+          }
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.products.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.78,
+            ),
+              itemBuilder: (_, i) {
+                final ProductModel p = controller.products[i];
+                return ProductCard(
+                  product: p ,
+                  onTap: () => controller.openProduct(p),
+                  onAdd: () => cart.addProduct(p),
+                );
+              },
+          );
+        }),
       ],
     );
   }
@@ -175,18 +236,32 @@ class _AboutTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final farm = controller.farm;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('About this farm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        const Text(
+          'About this farm',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
         const SizedBox(height: 8),
-        Text(controller.farm.about.isEmpty
-            ? 'No description provided yet.'
-            : controller.farm.about),
+        Text(
+          farm.about.isEmpty ? 'No description provided yet.' : farm.about,
+        ),
         const SizedBox(height: 16),
         ListTile(
-          leading: CircleAvatar(backgroundImage: NetworkImage(controller.farm.ownerAvatarUrl)),
-          title: Text(controller.farm.ownerName),
+          contentPadding: EdgeInsets.zero,
+          leading: CircleAvatar(
+            backgroundColor: AppColors.divider,
+            backgroundImage: farm.ownerAvatarUrl.isEmpty
+                ? null
+                : NetworkImage(farm.ownerAvatarUrl),
+            child: farm.ownerAvatarUrl.isEmpty
+                ? const Icon(Icons.person, color: Colors.white)
+                : null,
+          ),
+          title: Text(farm.ownerName),
           subtitle: const Text('Farmer / Owner'),
           trailing: const Icon(Icons.phone, color: AppColors.primary),
         ),
@@ -201,17 +276,24 @@ class _ReviewsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (controller.reviews.isEmpty) {
+      return const Center(child: Text('No reviews yet'));
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: controller.reviews.length,
-      separatorBuilder: (_, __) => const Divider(),
+      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (_, i) {
         final r = controller.reviews[i];
         return ListTile(
           contentPadding: EdgeInsets.zero,
           title: Row(
             children: [
-              Text(r.reviewerName, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                r.reviewerName,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(width: 8),
               RatingStars(rating: r.rating),
             ],
@@ -228,10 +310,11 @@ class _ReviewsTab extends StatelessWidget {
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
-  _TabBarDelegate(this.tabBar);
+  const _TabBarDelegate(this.tabBar);
 
   @override
   double get minExtent => tabBar.preferredSize.height;
+
   @override
   double get maxExtent => tabBar.preferredSize.height;
 
@@ -241,5 +324,6 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
+      oldDelegate.tabBar != tabBar;
 }

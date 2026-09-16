@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:phum_kasikors/controller/costumer/costumer_product_controller.dart';
 import 'package:phum_kasikors/core/routes/app_routes.dart';
-// TODO: verify this is the correct ProductModel — MockDataService.popularProducts
 // looked like it returns a different type than farmer/product_model.dart's
 // ProductModel (there was a suspicious `as` cast in the original code).
 // If your customer-facing product model lives elsewhere (e.g.
 // costumer_product_model.dart, matching FarmProductsController), import that
 // one instead.
-import 'package:phum_kasikors/model/farmer/product_model.dart';
+import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 import 'package:phum_kasikors/repositories/costumer/data_service.dart';
 
 class ExploreCategory {
@@ -30,7 +28,6 @@ class ExploreController extends GetxController {
       Icons.local_florist,
       ProductCategory.herbs,
     ),
-    // TODO: confirm the enum member name — used `dairy` to match the
     // ProductCategory enum shown earlier; change back to `dairyEggs` if
     // costumer_product_controller.dart actually defines it that way.
     ExploreCategory('Dairy & Eggs', Icons.egg, ProductCategory.dairy),
@@ -48,12 +45,9 @@ class ExploreController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // TODO: remove this cast once popularProducts' declared type matches
     // ProductModel — an `as` cast here will throw at runtime if the real
     // element type doesn't actually match.
-    popularProducts.assignAll(
-      _dataService.popularProducts as Iterable<ProductModel>,
-    );
+    popularProducts.assignAll(_dataService.popularProducts);
   }
 
   void openCategory(ExploreCategory category) {
@@ -61,7 +55,10 @@ class ExploreController extends GetxController {
   }
 
   void openSeasonalPick() {
-    Get.toNamed(AppRoutes.costumerSearchFilterscreen);
+    Get.toNamed(
+      AppRoutes.costumerSearchFilterscreen,
+      arguments: ProductCategory.fruits,
+    );
   }
 
   void openProduct(ProductModel product) =>

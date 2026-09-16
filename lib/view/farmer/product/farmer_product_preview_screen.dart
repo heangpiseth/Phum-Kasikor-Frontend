@@ -10,9 +10,15 @@ class FarmerProductPreviewScreen extends StatelessWidget {
   final String productId;
   @override
   Widget build(BuildContext context) {
-    final product = Get.find<FarmerController>().products.firstWhere(
-      (item) => item.id == productId,
-    );
+    final products = Get.find<FarmerController>().products;
+    final matchingProducts = products.where((item) => item.id == productId);
+    if (matchingProducts.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Product Preview')),
+        body: const Center(child: Text('Product not found.')),
+      );
+    }
+    final product = matchingProducts.first;
     return Scaffold(
       appBar: AppBar(
         title: const Text(

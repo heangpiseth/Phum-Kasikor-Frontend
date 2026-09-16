@@ -57,6 +57,8 @@ static const costumerFarmProductsscreen =
 static const costumerProfilescreen =
 '/costumer/profile';
 
+static const aiAssistant = '/ai-assistant';
+
 // =========================
 // FARMER
 // =========================

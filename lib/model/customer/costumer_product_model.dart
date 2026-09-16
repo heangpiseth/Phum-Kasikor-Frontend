@@ -1,7 +1,14 @@
 // product_model.dart
-enum ProductCategory { vegetables, fruits, rice, herbs, dairyEggs, processed, organic, specialty;
-
-  toLowerCase() {} }
+enum ProductCategory {
+  vegetables,
+  fruits,
+  rice,
+  herbs,
+  dairy,
+  processed,
+  organic,
+  specialty,
+}
 
 enum StockStatus { inStock, lowStock, outOfStock }
 
@@ -45,4 +52,5 @@ class ProductModel {
   });
 
   String get priceLabel => '\$${price.toStringAsFixed(2)}$unit';
+  String get priceLocal => priceLabel;
 }

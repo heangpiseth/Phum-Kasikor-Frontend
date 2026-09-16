@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import 'package:phum_kasikors/color/color.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_orders_list_controller.dart';
-import 'package:phum_kasikors/model/customer/costumer_order_model.dart';
 
 class OrdersListView extends GetView<OrdersListController> {
   const OrdersListView({super.key});
@@ -77,7 +76,7 @@ class OrdersListView extends GetView<OrdersListController> {
                     ),
                     child: ListTile(
                       onTap: () {
-                        controller.openTracking(order.id as OrderModel, Get.routing);
+                        controller.openTracking(order);
                       },
 
                       title: Text(

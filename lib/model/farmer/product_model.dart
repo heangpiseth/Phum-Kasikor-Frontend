@@ -30,9 +30,9 @@ class ProductModel {
     isAvailable: json['isAvailable'] as bool? ?? true,
   );
 
-  get priceLabel => null;
+  Null get priceLabel => null;
 
-  get farmName => null;
+  Null get farmName => null;
   Map<String, dynamic> toJson() => {
     'id': id,
     'farmId': farmId,

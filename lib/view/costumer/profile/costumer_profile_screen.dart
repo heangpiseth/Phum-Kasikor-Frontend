@@ -50,7 +50,6 @@ class CostumerProfileScreen extends GetView<ProfileController> {
           _menuTile(Icons.star_border, 'My Reviews'),
           _menuTile(Icons.location_on_outlined, 'Delivery Addresses'),
           _menuTile(Icons.credit_card, 'Payment Methods'),
-          _menuTile(Icons.smart_toy_outlined, 'AI Chat Assistant', highlight: true),
           _menuTile(Icons.notifications_none, 'Notification Settings'),
           _menuTile(Icons.language, 'Language (ខ្មែរ)'),
           _menuTile(Icons.help_outline, 'Help & Support'),
