@@ -2,162 +2,360 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/core/stroage/token_stroage.dart';
 import 'package:phum_kasikors/model/farmer/user_model.dart';
+
 import 'package:phum_kasikors/view/costumer/costumer_home_screen.dart';
+import 'package:phum_kasikors/view/Farmer/farmer_home_screen.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
-import '../../view/Farmer/farmer_home_screen.dart';
 
 class AuthController extends GetxController {
+  // ============================================================
+  // LOGIN
+  // ============================================================
+
   final loginPhoneController = TextEditingController();
   final loginPasswordController = TextEditingController();
+
+  // ============================================================
+  // SIGN UP
+  // ============================================================
+
   final signUpNameController = TextEditingController();
   final signUpPhoneController = TextEditingController();
   final signUpEmailController = TextEditingController();
   final signUpPasswordController = TextEditingController();
+
+  // ============================================================
+  // PROFILE
+  // ============================================================
+
   final profileNameController = TextEditingController();
   final farmNameController = TextEditingController();
   final bioController = TextEditingController();
   final addressController = TextEditingController();
   final profilePhoneController = TextEditingController();
-  final provinceController = TextEditingController(text: 'Phnom Penh');
+
+  // ============================================================
+  // LOCATION
+  // ============================================================
+
+  final provinceController =
+      TextEditingController(text: 'Phnom Penh');
+
   final districtController = TextEditingController();
   final communeController = TextEditingController();
-  final otpControllers = List.generate(6, (_) => TextEditingController());
+
+  // ============================================================
+  // OTP
+  // ============================================================
+
+  final otpControllers =
+      List.generate(6, (_) => TextEditingController());
+
+  // ============================================================
+  // STATE
+  // ============================================================
 
   final selectedRole = UserRole.farmer.obs;
+
   final acceptedTerms = false.obs;
+
   final isLoading = false.obs;
+
   final resendSeconds = 45.obs;
+
   final errorMessage = RxnString();
 
-  // Set once /register succeeds - needed by verifyOtp() to identify
-  // which account the code belongs to.
+  // ============================================================
+  // INTERNAL DATA
+  // ============================================================
+
   String? _pendingUserId;
 
-  final _firebaseAuth = FirebaseAuth.instance;
+  // ============================================================
+  // FIREBASE
+  // ============================================================
+
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   late final Future<void> _googleInit;
+
+  // ============================================================
+  // GETTERS
+  // ============================================================
+
+  String get phone {
+    final signupPhone =
+        signUpPhoneController.text.trim();
+
+    if (signupPhone.isNotEmpty) {
+      return signupPhone;
+    }
+
+    return loginPhoneController.text.trim();
+  }
+
+  String get otp {
+    return otpControllers
+        .map((controller) => controller.text.trim())
+        .join();
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void onInit() {
     super.onInit();
+
     _googleInit = GoogleSignIn.instance.initialize(
       serverClientId:
           '392917185692-1olantat1oah94rnq10cjjt80vk4f3qm.apps.googleusercontent.com',
     );
   }
 
-  Future<void> signInWithGoogle() async {
+  // ============================================================
+  // VALIDATE PHONE
+  // ============================================================
+
+  bool _validPhone(String value) {
+    final digits = value
+        .trim()
+        .replaceAll(RegExp(r'[^0-9]'), '');
+
+    return digits.length >= 8;
+  }
+
+  // ============================================================
+  // SHOW ERROR
+  // ============================================================
+
+  void _showError(String message) {
+    errorMessage.value = message;
+
+    Get.snackbar(
+      'Something went wrong',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  // ============================================================
+  // LOGIN
+  // ============================================================
+
+  Future<void> beginLogin() async {
+    debugPrint('========================================');
+    debugPrint('>>> beginLogin() called');
+    debugPrint('========================================');
+
+    final identifier =
+        loginPhoneController.text.trim();
+
+    final password =
+        loginPasswordController.text;
+
+    // ----------------------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------------------
+
+    if (identifier.isEmpty) {
+      _showError(
+        'Please enter your phone number or email.',
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showError(
+        'Please enter your password.',
+      );
+      return;
+    }
+
+    if (password.length < 8) {
+      _showError(
+        'Your password must be at least 8 characters.',
+      );
+      return;
+    }
+
     isLoading.value = true;
     errorMessage.value = null;
 
     try {
-      await _googleInit;
+      debugPrint('>>> Login identifier: $identifier');
 
-      final googleUser = await GoogleSignIn.instance.authenticate();
+      // --------------------------------------------------------
+      // CALL LARAVEL
+      // --------------------------------------------------------
 
-      final idToken = googleUser.authentication.idToken;
-
-      if (idToken == null) {
-        isLoading.value = false;
-        _showError('Failed to get Google ID token.');
-        return;
-      }
-
-      final credential = GoogleAuthProvider.credential(idToken: idToken);
-
-      final userCredential = await _firebaseAuth.signInWithCredential(
-        credential,
+      final response = await ApiClient.post(
+        'auth/login',
+        {
+          'identifier': identifier,
+          'password': password,
+        },
       );
 
-      final firebaseIdToken = await userCredential.user?.getIdToken();
+      debugPrint('>>> Login response: $response');
 
-      if (firebaseIdToken == null) {
-        isLoading.value = false;
-        _showError('Failed to get Firebase ID token.');
-        return;
-      }
-
-      final json = await ApiClient.post('auth/firebase/verify', {
-        'id_token': firebaseIdToken,
-      });
-
-      // ⭐️ SAFE TOKEN HANDLING
-      final token = json['token'];
-
-      if (token == null) {
+      if (response is! Map) {
         throw ApiException(
           500,
-          'Google authentication did not return a token.',
+          'Invalid login response from server.',
         );
       }
 
-      await TokenStorage.saveToken(token.toString());
+      final json =
+          Map<String, dynamic>.from(response);
 
-      // ⭐️ SAFE USER HANDLING
+      // --------------------------------------------------------
+      // TOKEN
+      // --------------------------------------------------------
+
+      final token = json['token'];
+
+      if (token == null ||
+          token.toString().isEmpty) {
+        throw ApiException(
+          500,
+          'Login did not return an authentication token.',
+        );
+      }
+
+      await TokenStorage.saveToken(
+        token.toString(),
+      );
+
+      debugPrint('>>> Login token saved');
+
+      // --------------------------------------------------------
+      // USER
+      // --------------------------------------------------------
+
       final userJson = json['user'];
 
       if (userJson is! Map) {
         throw ApiException(
           500,
-          'Google authentication returned invalid user data.',
+          'Login returned invalid user data.',
         );
       }
 
-      final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+      final user = UserModel.fromJson(
+        Map<String, dynamic>.from(userJson),
+      );
 
-      final isNew = json['is_new'] as bool? ?? false;
+      debugPrint(
+        '>>> Logged in user: ${user.name}',
+      );
+
+      debugPrint(
+        '>>> User role: ${user.role.name}',
+      );
+
+      // --------------------------------------------------------
+      // SAVE ROLE
+      // --------------------------------------------------------
+
+      await TokenStorage.saveRole(
+        user.role.name,
+      );
+
+      // --------------------------------------------------------
+      // FINISH LOADING
+      // --------------------------------------------------------
 
       isLoading.value = false;
 
-      if (isNew) {
-        Get.toNamed(AppRoutes.roleSelection);
-        return;
-      }
-
-      await TokenStorage.saveRole(user.role.name);
+      // --------------------------------------------------------
+      // GO HOME
+      // --------------------------------------------------------
 
       _goHome(user.role);
-    } on GoogleSignInException catch (e) {
-      isLoading.value = false;
- if (e.code != GoogleSignInExceptionCode.canceled) {
-        _showError('Google sign-in failed. Please try again.');
-      }
     } on ApiException catch (e) {
       isLoading.value = false;
+
+      debugPrint(
+        '>>> Login API error: ${e.message}',
+      );
+
       _showError(e.message);
-    } catch (e) {
+    } catch (e, stackTrace) {
       isLoading.value = false;
-      _showError('Google sign-in failed: ${e.toString()}');
+
+      debugPrint(
+        '>>> Login unexpected error: $e',
+      );
+
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Login failed. Please try again.',
+      );
     }
   }
 
-  String get phone => signUpPhoneController.text.trim().isNotEmpty
-      ? signUpPhoneController.text.trim()
-      : loginPhoneController.text.trim();
-  String get otp => otpControllers.map((controller) => controller.text).join();
+  // ============================================================
+  // SIGN UP
+  // ============================================================
 
-  bool _validPhone(String value) =>
-      value.trim().replaceAll(RegExp(r'[^0-9]'), '').length >= 8;
+  Future<void> beginSignUp() async {
+    debugPrint('========================================');
+    debugPrint('>>> beginSignUp() called');
+    debugPrint('========================================');
 
-  void _showError(String message) {
-    errorMessage.value = message;
-    Get.snackbar(
-      'Check your details',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
+    final name =
+        signUpNameController.text.trim();
 
-  /// Logs in directly against the real backend - no OTP needed, since
-  /// /login issues a token immediately for an already-verified account.
-  Future<void> beginLogin() async {
-    if (!_validPhone(loginPhoneController.text) || loginPasswordController.text.trim().length < 8) {
+    final phone =
+        signUpPhoneController.text.trim();
+
+    final email =
+        signUpEmailController.text.trim();
+
+    final password =
+        signUpPasswordController.text;
+
+    // ----------------------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------------------
+
+    if (name.isEmpty) {
       _showError(
-        'Enter a valid phone number and a password of at least 8 characters.',
+        'Please enter your full name.',
+      );
+      return;
+    }
+
+    if (!_validPhone(phone)) {
+      _showError(
+        'Please enter a valid phone number.',
+      );
+      return;
+    }
+
+    if (password.length < 8) {
+      _showError(
+        'Your password must be at least 8 characters.',
+      );
+      return;
+    }
+
+    if (!acceptedTerms.value) {
+      _showError(
+        'Please accept the Terms of Service and Privacy Policy.',
       );
       return;
     }
@@ -166,61 +364,12 @@ class AuthController extends GetxController {
     errorMessage.value = null;
 
     try {
-      final json = await ApiClient.post('auth/login', {
-        'identifier': loginPhoneController.text.trim(),
-        'password': loginPasswordController.text,
-      });
+      // --------------------------------------------------------
+      // REQUEST BODY
+      // --------------------------------------------------------
 
-      await TokenStorage.saveToken(json['token'] as String);
-      final user = UserModel.fromJson(json['user'] as Map<String, dynamic>);
-
-      isLoading.value = false;
-
-      await TokenStorage.saveRole(user.role.name);
-      _goHome(user.role);
-    } on ApiException catch (e) {
-      isLoading.value = false;
-      _showError(e.message);
-    }
-  }
-
-  Future<void> beginSignUp() async {
-    debugPrint('>>> beginSignUp() called');
-
-    final name = signUpNameController.text.trim();
-    final phone = signUpPhoneController.text.trim();
-    final email = signUpEmailController.text.trim();
-    final password = signUpPasswordController.text;
-
-    // -----------------------------
-    // Validate signup form
-    // -----------------------------
-
-    if (name.isEmpty) {
-      _showError('Please enter your full name.');
-      return;
-    }
-
-    if (!_validPhone(phone)) {
-      _showError('Please enter a valid phone number.');
-      return;
-    }
-
-    if (password.length < 8) {
-      _showError('Your password must be at least 8 characters.');
-      return;
-    }
-
-    if (!acceptedTerms.value) {
-      _showError('Please accept the Terms of Service and Privacy Policy.');
-      return;
-    }
-
-    isLoading.value = true;
-    errorMessage.value = null;
-
-    try {
-      final requestBody = <String, dynamic>{
+      final requestBody =
+          <String, dynamic>{
         'name': name,
         'phone': phone,
         'password': password,
@@ -230,100 +379,153 @@ class AuthController extends GetxController {
         requestBody['email'] = email;
       }
 
-      debugPrint('>>> Register request: $requestBody');
+      debugPrint(
+        '>>> Register request: $requestBody',
+      );
 
-      final response = await ApiClient.post('auth/register', requestBody);
+      // --------------------------------------------------------
+      // CALL LARAVEL
+      // --------------------------------------------------------
 
-      debugPrint('>>> Register response: $response');
+      final response = await ApiClient.post(
+        'auth/register',
+        requestBody,
+      );
+
+      debugPrint(
+        '>>> Register response: $response',
+      );
 
       if (response is! Map) {
-        throw ApiException(500, 'Invalid registration response from server.');
+        throw ApiException(
+          500,
+          'Invalid registration response from server.',
+        );
       }
 
-      final json = Map<String, dynamic>.from(response);
+      final json =
+          Map<String, dynamic>.from(response);
 
-      // -----------------------------------------
-      // Save token if Laravel returned one
-      // -----------------------------------------
+      // --------------------------------------------------------
+      // SAVE TOKEN
+      // --------------------------------------------------------
 
       final token = json['token'];
 
-      if (token != null && token.toString().isNotEmpty) {
-        await TokenStorage.saveToken(token.toString());
-        debugPrint('>>> Registration token saved');
-      } else {
-        debugPrint('>>> Registration did not return a token');
+      if (token != null &&
+          token.toString().isNotEmpty) {
+        await TokenStorage.saveToken(
+          token.toString(),
+        );
+
+        debugPrint(
+          '>>> Registration token saved',
+        );
       }
 
-      // -----------------------------------------
-      // Read user if Laravel returned one
-      // -----------------------------------------
+      // --------------------------------------------------------
+      // GET USER ID
+      // --------------------------------------------------------
 
       final userJson = json['user'];
 
       if (userJson is Map) {
-        final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+        final user = UserModel.fromJson(
+          Map<String, dynamic>.from(userJson),
+        );
 
         _pendingUserId = user.id;
 
-        debugPrint('>>> Registered user ID: ${user.id}');
+        debugPrint(
+          '>>> Registered user ID: $_pendingUserId',
+        );
       } else if (json['user_id'] != null) {
-        _pendingUserId = json['user_id'].toString();
-
-        debugPrint('>>> Registered user ID: $_pendingUserId');
+        _pendingUserId =
+            json['user_id'].toString();
       } else if (json['id'] != null) {
-        _pendingUserId = json['id'].toString();
-
-        debugPrint('>>> Registered user ID: $_pendingUserId');
+        _pendingUserId =
+            json['id'].toString();
       }
+
+      // --------------------------------------------------------
+      // STOP LOADING
+      // --------------------------------------------------------
 
       isLoading.value = false;
 
-      // -----------------------------------------
-      // Make sure we have a user ID for OTP
-      // -----------------------------------------
+      // --------------------------------------------------------
+      // CHECK USER ID
+      // --------------------------------------------------------
 
-      if (_pendingUserId == null) {
+      if (_pendingUserId == null ||
+          _pendingUserId!.isEmpty) {
         _showError(
           'Account was created, but the server did not return the user ID needed for verification.',
         );
         return;
       }
 
-      // -----------------------------------------
-      // Go to OTP screen
-      // -----------------------------------------
+      // --------------------------------------------------------
+      // GO TO OTP
+      // --------------------------------------------------------
 
-      Get.toNamed(AppRoutes.verification);
+      Get.toNamed(
+        AppRoutes.verification,
+      );
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint('>>> Registration API error: ${e.message}');
+      debugPrint(
+        '>>> Registration API error: ${e.message}',
+      );
 
       _showError(e.message);
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint('========================================');
-      debugPrint('>>> REGISTRATION UNEXPECTED ERROR');
-      debugPrint('>>> ERROR: $e');
-      debugPrint('>>> ERROR TYPE: ${e.runtimeType}');
-      debugPrint('>>> STACK TRACE:');
-      debugPrint('$stackTrace');
-      debugPrint('========================================');
+      debugPrint(
+        '>>> Registration unexpected error: $e',
+      );
 
-      _showError('Registration failed: ${e.toString()}');
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Registration failed. Please try again.',
+      );
     }
   }
 
+  // ============================================================
+  // VERIFY OTP
+  // ============================================================
+
   Future<void> verifyOtp() async {
+    debugPrint('========================================');
+    debugPrint('>>> verifyOtp() called');
+    debugPrint('========================================');
+
+    // ----------------------------------------------------------
+    // VALIDATE OTP
+    // ----------------------------------------------------------
+
     if (otp.length != 6) {
-      _showError('Enter the complete 6-digit verification code.');
+      _showError(
+        'Enter the complete 6-digit verification code.',
+      );
       return;
     }
 
-    if (_pendingUserId == null || _pendingUserId!.isEmpty) {
-      _showError('Something went wrong. Please sign up again.');
+    // ----------------------------------------------------------
+    // CHECK USER ID
+    // ----------------------------------------------------------
+
+    if (_pendingUserId == null ||
+        _pendingUserId!.isEmpty) {
+      _showError(
+        'Something went wrong. Please sign up again.',
+      );
       return;
     }
 
@@ -331,152 +533,618 @@ class AuthController extends GetxController {
     errorMessage.value = null;
 
     try {
-      debugPrint('>>> Verifying OTP for user: $_pendingUserId');
+      debugPrint(
+        '>>> Verifying OTP for user: $_pendingUserId',
+      );
 
-      final response = await ApiClient.post('auth/verify', {
-        'user_id': _pendingUserId,
-        'code': otp,
-      });
+      // --------------------------------------------------------
+      // CALL LARAVEL
+      // --------------------------------------------------------
 
-      debugPrint('>>> OTP response: $response');
+      final response = await ApiClient.post(
+        'auth/verify',
+        {
+          'user_id': _pendingUserId,
+          'code': otp,
+        },
+      );
 
-      // -------------------------------------
-      // If verification returns a token,
-      // save it.
-      // -------------------------------------
+      debugPrint(
+        '>>> OTP response: $response',
+      );
+
+      // --------------------------------------------------------
+      // SAVE TOKEN IF SERVER RETURNS ONE
+      // --------------------------------------------------------
 
       if (response is Map) {
-        final json = Map<String, dynamic>.from(response);
+        final json =
+            Map<String, dynamic>.from(response);
 
         final token = json['token'];
 
-        if (token != null && token.toString().isNotEmpty) {
-          await TokenStorage.saveToken(token.toString());
+        if (token != null &&
+            token.toString().isNotEmpty) {
+          await TokenStorage.saveToken(
+            token.toString(),
+          );
         }
       }
 
       isLoading.value = false;
 
-      Get.offNamed(AppRoutes.roleSelection);
+      // --------------------------------------------------------
+      // GO TO ROLE SELECTION
+      // --------------------------------------------------------
+
+      Get.offNamed(
+        AppRoutes.roleSelection,
+      );
     } on ApiException catch (e) {
       isLoading.value = false;
 
+      debugPrint(
+        '>>> OTP API error: ${e.message}',
+      );
+
       _showError(e.message);
-    } catch (e) {
+    } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint('>>> OTP unexpected error: $e');
+      debugPrint(
+        '>>> OTP unexpected error: $e',
+      );
 
-      _showError('Unable to verify your account. Please try again.');
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Unable to verify your account. Please try again.',
+      );
     }
   }
+
+  // ============================================================
+  // RESEND OTP
+  // ============================================================
 
   void resendOtp() {
     resendSeconds.value = 45;
-    Get.snackbar('Code sent', 'A new verification code was sent to $phone.');
+
+    Get.snackbar(
+      'Code sent',
+      'A new verification code was sent to $phone.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
-  /// Submits the chosen role - called from ChooseRoleScreen's Continue button.
-  Future<void> submitRole() async {
-    isLoading.value = true;
-    errorMessage.value = null;
+  // ============================================================
+  // GOOGLE SIGN IN
+  // ============================================================
 
-    try {
-      await ApiClient.put('profile/choose-role', {
-        'role': selectedRole.value.name,
-      });
-      await TokenStorage.saveRole(selectedRole.value.name);
-
-      isLoading.value = false;
-      Get.toNamed(AppRoutes.profileSetup);
-    } on ApiException catch (e) {
-      isLoading.value = false;
-      _showError(e.message);
-    }
-  }
-
-  Future<void> saveProfile() async {
-    if (profileNameController.text.trim().isEmpty) {
-      _showError('Your full name is required.');
-      return;
-    }
+  Future<void> signInWithGoogle() async {
+    debugPrint('========================================');
+    debugPrint('>>> signInWithGoogle() called');
+    debugPrint('========================================');
 
     isLoading.value = true;
     errorMessage.value = null;
 
     try {
-      final farmName = farmNameController.text.trim();
-      final bio = bioController.text.trim();
-await ApiClient.put('profile/setup', {
-        'name': profileNameController.text.trim(),
-        if (bio.isNotEmpty) 'bio': bio,
-        if (selectedRole.value == UserRole.farmer && farmName.isNotEmpty)
-          'farm_name': farmName,
-      });
+      // --------------------------------------------------------
+      // INITIALIZE GOOGLE
+      // --------------------------------------------------------
 
-      isLoading.value = false;
-      Get.toNamed(AppRoutes.locationSetup);
-    } on ApiException catch (e) {
-      isLoading.value = false;
-      _showError(e.message);
-    }
-  }
+      await _googleInit;
 
-  Future<void> completeLocation() async {
-    if (provinceController.text.trim().isEmpty) {
-      _showError('Choose your province or city first.');
-      return;
-    }
+      debugPrint(
+        '>>> Google Sign-In initialized',
+      );
 
-    isLoading.value = true;
-    errorMessage.value = null;
+      // --------------------------------------------------------
+      // GOOGLE ACCOUNT PICKER
+      // --------------------------------------------------------
 
-    try {
-      final district = districtController.text.trim();
-      final commune = communeController.text.trim();
+      final googleUser =
+          await GoogleSignIn.instance.authenticate();
 
-      final response = await ApiClient.put('profile/location', {
-        'province': provinceController.text.trim(),
-        if (district.isNotEmpty) 'district': district,
-        if (commune.isNotEmpty) 'commune': commune,
-      });
+      debugPrint(
+        '>>> Google account selected',
+      );
 
-      debugPrint('>>> Location response: $response');
+      // --------------------------------------------------------
+      // GOOGLE ID TOKEN
+      // --------------------------------------------------------
 
-      if (response is! Map) {
-        throw ApiException(500, 'Invalid location response from server.');
+      final idToken =
+          googleUser.authentication.idToken;
+
+      if (idToken == null ||
+          idToken.isEmpty) {
+        throw ApiException(
+          500,
+          'Failed to get Google ID token.',
+        );
       }
 
-      final json = Map<String, dynamic>.from(response);
+      debugPrint(
+        '>>> Google ID token received',
+      );
+
+      // --------------------------------------------------------
+      // FIREBASE GOOGLE CREDENTIAL
+      // --------------------------------------------------------
+
+      final credential =
+          GoogleAuthProvider.credential(
+        idToken: idToken,
+      );
+
+      // --------------------------------------------------------
+      // SIGN INTO FIREBASE
+      // --------------------------------------------------------
+
+      final userCredential =
+          await _firebaseAuth
+              .signInWithCredential(
+        credential,
+      );
+
+      debugPrint(
+        '>>> Firebase Google sign-in successful',
+      );
+
+      // --------------------------------------------------------
+      // FIREBASE ID TOKEN
+      // --------------------------------------------------------
+
+      final firebaseIdToken =
+          await userCredential.user?.getIdToken();
+
+      if (firebaseIdToken == null ||
+          firebaseIdToken.isEmpty) {
+        throw ApiException(
+          500,
+          'Failed to get Firebase ID token.',
+        );
+      }
+
+      debugPrint(
+        '>>> Firebase ID token received',
+      );
+
+      // --------------------------------------------------------
+      // SEND FIREBASE TOKEN TO LARAVEL
+      // --------------------------------------------------------
+
+      final response =
+          await ApiClient.post(
+        'auth/firebase/verify',
+        {
+          'id_token': firebaseIdToken,
+        },
+      );
+
+      debugPrint(
+        '>>> Laravel Firebase response: $response',
+      );
+
+      if (response is! Map) {
+        throw ApiException(
+          500,
+          'Invalid Firebase authentication response.',
+        );
+      }
+
+      final json =
+          Map<String, dynamic>.from(response);
+
+      // --------------------------------------------------------
+      // SANCTUM TOKEN
+      // --------------------------------------------------------
+
+      final token = json['token'];
+
+      if (token == null ||
+          token.toString().isEmpty) {
+        throw ApiException(
+          500,
+          'Google authentication did not return a token.',
+        );
+      }
+
+      await TokenStorage.saveToken(
+        token.toString(),
+      );
+
+      debugPrint(
+        '>>> Laravel Sanctum token saved',
+      );
+
+      // --------------------------------------------------------
+      // USER
+      // --------------------------------------------------------
 
       final userJson = json['user'];
 
-      UserModel user;
+      if (userJson is! Map) {
+        throw ApiException(
+          500,
+          'Google authentication returned invalid user data.',
+        );
+      }
+
+      final user = UserModel.fromJson(
+        Map<String, dynamic>.from(userJson),
+      );
+
+      // --------------------------------------------------------
+      // NEW ACCOUNT?
+      // --------------------------------------------------------
+
+      final isNew =
+          json['is_new'] as bool? ?? false;
+
+      debugPrint(
+        '>>> Google user isNew: $isNew',
+      );
+
+      isLoading.value = false;
+
+      // --------------------------------------------------------
+      // NEW GOOGLE USER
+      // --------------------------------------------------------
+
+      if (isNew) {
+        Get.offNamed(
+          AppRoutes.roleSelection,
+        );
+        return;
+      }
+
+      // --------------------------------------------------------
+      // EXISTING GOOGLE USER
+      // --------------------------------------------------------
+
+      await TokenStorage.saveRole(
+        user.role.name,
+      );
+
+      _goHome(user.role);
+    } on GoogleSignInException catch (e) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Google Sign-In error: $e',
+      );
+
+      if (e.code ==
+          GoogleSignInExceptionCode.canceled) {
+        return;
+      }
+
+      _showError(
+        'Google sign-in failed. Please try again.',
+      );
+    } on ApiException catch (e) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Google API error: ${e.message}',
+      );
+
+      _showError(e.message);
+    } on FirebaseAuthException catch (e) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Firebase error: ${e.code}',
+      );
+
+      _showError(
+        e.message ??
+            'Firebase authentication failed.',
+      );
+    } catch (e, stackTrace) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Google unexpected error: $e',
+      );
+
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Google sign-in failed. Please try again.',
+      );
+    }
+  }
+
+  // ============================================================
+  // CHOOSE ROLE
+  // ============================================================
+
+  Future<void> submitRole() async {
+    debugPrint('========================================');
+    debugPrint('>>> submitRole() called');
+    debugPrint('>>> Role: ${selectedRole.value.name}');
+    debugPrint('========================================');
+
+    isLoading.value = true;
+    errorMessage.value = null;
+
+    try {
+      // --------------------------------------------------------
+      // SAVE ROLE TO LARAVEL
+      // --------------------------------------------------------
+
+      final response = await ApiClient.put(
+        'profile/choose-role',
+        {
+          'role': selectedRole.value.name,
+        },
+      );
+
+      debugPrint(
+        '>>> Choose role response: $response',
+      );
+
+      // --------------------------------------------------------
+      // SAVE ROLE LOCALLY
+      // --------------------------------------------------------
+
+      await TokenStorage.saveRole(
+        selectedRole.value.name,
+      );
+
+      isLoading.value = false;
+
+      // --------------------------------------------------------
+      // FARMER
+      // --------------------------------------------------------
+
+      if (selectedRole.value ==
+          UserRole.farmer) {
+        Get.toNamed(
+          AppRoutes.profileSetup,
+        );
+        return;
+      }
+
+      // --------------------------------------------------------
+      // CUSTOMER
+      // --------------------------------------------------------
+
+      Get.offAllNamed(
+        AppRoutes.costumerHomescreen,
+      );
+    } on ApiException catch (e) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Role API error: ${e.message}',
+      );
+
+      _showError(e.message);
+    } catch (e, stackTrace) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Role unexpected error: $e',
+      );
+
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Unable to save your role. Please try again.',
+      );
+    }
+  }
+
+  // ============================================================
+  // SAVE PROFILE
+  // ============================================================
+
+  Future<void> saveProfile() async {
+    final name =
+        profileNameController.text.trim();
+
+    if (name.isEmpty) {
+      _showError(
+        'Your full name is required.',
+      );
+      return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = null;
+
+    try {
+      final farmName =
+          farmNameController.text.trim();
+
+      final bio =
+          bioController.text.trim();
+
+      final body =
+          <String, dynamic>{
+        'name': name,
+      };
+
+      if (bio.isNotEmpty) {
+        body['bio'] = bio;
+      }
+
+      if (selectedRole.value ==
+              UserRole.farmer &&
+          farmName.isNotEmpty) {
+        body['farm_name'] = farmName;
+      }
+
+      debugPrint(
+        '>>> Profile request: $body',
+      );
+
+      final response =
+          await ApiClient.put(
+        'profile/setup',
+        body,
+      );
+
+      debugPrint(
+        '>>> Profile response: $response',
+      );
+
+      isLoading.value = false;
+
+      Get.toNamed(
+        AppRoutes.locationSetup,
+      );
+    } on ApiException catch (e) {
+      isLoading.value = false;
+
+      _showError(e.message);
+    } catch (e, stackTrace) {
+      isLoading.value = false;
+
+      debugPrint(
+        '>>> Profile unexpected error: $e',
+      );
+
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Unable to save your profile. Please try again.',
+      );
+    }
+  }
+
+  // ============================================================
+  // COMPLETE LOCATION
+  // ============================================================
+
+  Future<void> completeLocation() async {
+    final province =
+        provinceController.text.trim();
+
+    if (province.isEmpty) {
+      _showError(
+        'Choose your province or city first.',
+      );
+      return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = null;
+
+    try {
+      final district =
+          districtController.text.trim();
+
+      final commune =
+          communeController.text.trim();
+
+      final body =
+          <String, dynamic>{
+        'province': province,
+      };
+
+      if (district.isNotEmpty) {
+        body['district'] = district;
+      }
+
+      if (commune.isNotEmpty) {
+        body['commune'] = commune;
+      }
+
+      debugPrint(
+        '>>> Location request: $body',
+      );
+
+      final response =
+          await ApiClient.put(
+        'profile/location',
+        body,
+      );
+
+      debugPrint(
+        '>>> Location response: $response',
+      );
+
+      if (response is! Map) {
+        throw ApiException(
+          500,
+          'Invalid location response from server.',
+        );
+      }
+
+      final json =
+          Map<String, dynamic>.from(response);
+
+      // --------------------------------------------------------
+      // Laravel profile/location currently returns
+      // the User object directly.
+      //
+      // But this also supports:
+      // { "user": {...} }
+      // --------------------------------------------------------
+
+      final userJson = json['user'];
+
+      late final UserModel user;
 
       if (userJson is Map) {
-        user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+        user = UserModel.fromJson(
+          Map<String, dynamic>.from(userJson),
+        );
       } else {
         user = UserModel.fromJson(json);
       }
 
-      await TokenStorage.saveRole(user.role.name);
+      await TokenStorage.saveRole(
+        user.role.name,
+      );
 
       isLoading.value = false;
 
       _goHome(user.role);
     } on ApiException catch (e) {
       isLoading.value = false;
+
       _showError(e.message);
-    } catch (e) {
+    } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint('>>> Location unexpected error: $e');
+      debugPrint(
+        '>>> Location unexpected error: $e',
+      );
 
-      _showError('Unable to save your location. Please try again.');
+      debugPrint(
+        '>>> Stack trace: $stackTrace',
+      );
+
+      _showError(
+        'Unable to save your location. Please try again.',
+      );
     }
   }
 
+  // ============================================================
+  // GO TO HOME
+  // ============================================================
+
   void _goHome(UserRole role) {
+    debugPrint(
+      '>>> Going home with role: ${role.name}',
+    );
+
     Get.offAll(
       () => role == UserRole.farmer
           ? const FarmerHomeScreen()
@@ -484,27 +1152,34 @@ await ApiClient.put('profile/setup', {
     );
   }
 
+  // ============================================================
+  // CLEAN UP
+  // ============================================================
+
   @override
   void onClose() {
-    for (final controller in [
-      loginPhoneController,
-      loginPasswordController,
-      signUpNameController,
-      signUpPhoneController,
-      signUpEmailController,
-      signUpPasswordController,
-      profileNameController,
-      farmNameController,
-      bioController,
-      addressController,
-      profilePhoneController,
-      provinceController,
-      districtController,
-      communeController,
-      ...otpControllers,
-    ]) {
+    loginPhoneController.dispose();
+    loginPasswordController.dispose();
+
+    signUpNameController.dispose();
+    signUpPhoneController.dispose();
+    signUpEmailController.dispose();
+    signUpPasswordController.dispose();
+
+    profileNameController.dispose();
+    farmNameController.dispose();
+    bioController.dispose();
+    addressController.dispose();
+    profilePhoneController.dispose();
+
+    provinceController.dispose();
+    districtController.dispose();
+    communeController.dispose();
+
+    for (final controller in otpControllers) {
       controller.dispose();
     }
+
     super.onClose();
   }
 }

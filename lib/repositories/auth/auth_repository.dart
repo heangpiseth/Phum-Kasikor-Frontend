@@ -1,10 +1,9 @@
- import 'package:phum_kasikors/core/stroage/token_stroage.dart';
+import 'package:phum_kasikors/core/stroage/token_stroage.dart';
 import 'package:phum_kasikors/model/farmer/user_model.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/network/api_response.dart';
-
 
 class AuthRepository {
   Future<ApiResponse<Map<String, dynamic>>> register({
@@ -16,8 +15,8 @@ class AuthRepository {
     try {
       final json = await ApiClient.post('auth/register', {
         'name': name,
-        'email': ?email,
-        'phone': ?phone,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
         'password': password,
       });
 
@@ -118,7 +117,8 @@ class AuthRepository {
       return ApiResponse.failure(e.message, errors: e.errors);
     }
   }
-Future<ApiResponse<UserModel>> setupLocation({
+
+  Future<ApiResponse<UserModel>> setupLocation({
     required String province,
     String? district,
     String? commune,
@@ -128,10 +128,10 @@ Future<ApiResponse<UserModel>> setupLocation({
     try {
       final json = await ApiClient.put('profile/location', {
         'province': province,
-        'district': ?district,
-        'commune': ?commune,
-        'latitude': ?latitude,
-        'longitude': ?longitude,
+        if (district != null) 'district': district,
+        if (commune != null) 'commune': commune,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       });
       return ApiResponse.success(UserModel.fromJson(json));
     } on ApiException catch (e) {

@@ -174,15 +174,7 @@ class WelcomeScreen extends StatelessWidget {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Facebook - not wired up yet, kept visually for layout
-                            _socialImageButton(
-                              image: 'assets/facebook.jpg',
-                              onTap: () {
-                                Get.snackbar('Coming soon', 'Facebook sign-in is not available yet.');
-                              },
-                            ),
-                            SizedBox(width: 14),
- // Google
+                          // Google
                             _socialImageButton(
                               image: 'assets/google.jpg',
                               onTap: () {
