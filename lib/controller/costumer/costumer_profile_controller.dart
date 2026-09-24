@@ -1,24 +1,51 @@
 import 'package:get/get.dart';
-
-class ProfileMenuItem {
-  final String label;
-  final String icon; // material icon name resolved in the view
-  final int? badge;
-  const ProfileMenuItem(this.label, this.icon, {this.badge});
-
-  factory ProfileMenuItem.fromKey(String key, {int? badge}) =>
-      ProfileMenuItem(key, key, badge: badge);
-}
+import 'package:phum_kasikors/core/stroage/token_stroage.dart';
+import 'package:phum_kasikors/core/service/customer/customer_service.dart';
 
 class ProfileController extends GetxController {
-  final userName = 'Channa Sok'.obs;
-  final memberSince = 'July 2024'.obs;
-  final location = 'Phnom Penh, Cambodia'.obs;
-  final avatarUrl = 'https://i.pravatar.cc/150?img=47'.obs;
+  final CustomerService _service = CustomerService();
 
-  final ordersCount = 12.obs;
-  final favoritesCount = 8.obs;
-  final reviewsCount = 5.obs;
+  final userName = ''.obs;
+  final memberSince = ''.obs;
+  final location = ''.obs;
+  final avatarUrl = ''.obs;
+  final phone = ''.obs;
+  final email = ''.obs;
+
+  final ordersCount = 0.obs;
+  final favoritesCount = 0.obs;
+  final reviewsCount = 0.obs;
+
+  final isLoading = true.obs;
+  final errorMessage = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchProfile();
+  }
+
+  Future<void> fetchProfile() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // The profile data can come from the auth controller or a dedicated profile endpoint
+      // For now, we'll use a basic implementation
+      final token = await TokenStorage.getToken();
+      if (token != null && token.isNotEmpty) {
+        // Profile data could be fetched from an API endpoint
+        // For now using placeholder - replace with real API call when available
+        userName.value = 'Customer';
+        memberSince.value = DateTime.now().year.toString();
+        location.value = 'Cambodia';
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   void logout() {
     Get.defaultDialog(

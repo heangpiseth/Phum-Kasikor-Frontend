@@ -1,197 +1,570 @@
 import 'package:get/get.dart';
+
+import 'package:phum_kasikors/core/network/api_client.dart';
 import 'package:phum_kasikors/model/farmer/watering_log_model.dart';
 
-
 class WateringController extends GetxController {
-  final wateringLogs = <WateringLogModel>[].obs;
-  final isLoading = false.obs;
-  final errorMessage = RxnString();
-  final selectedCropId = Rxn<String>();
+  // ============================================================
+  // STATE
+  // ============================================================
 
-  List<WateringLogModel> get filteredLogs {
-    if (selectedCropId.value == null) {
-      return wateringLogs;
-    }
-    return wateringLogs
-        .where((log) => log.cropId == selectedCropId.value)
-        .toList();
-  }
+  final RxList<WateringModel> wateringLogs =
+      <WateringModel>[].obs;
 
-  List<WateringLogModel> get todayLogs {
-    final today = DateTime.now();
-    return wateringLogs
-        .where(
-          (log) =>
-              log.date.year == today.year &&
-              log.date.month == today.month &&
-              log.date.day == today.day,
-        )
-        .toList();
-  }
+  final RxBool isLoading = false.obs;
 
-  double get totalWaterUsedToday =>
-      todayLogs.fold(0, (sum, log) => sum + log.amount);
+  final RxBool isSaving = false.obs;
 
-  double get totalWaterUsedThisWeek {
-    final now = DateTime.now();
-    final weekAgo = now.subtract(const Duration(days: 7));
-    return wateringLogs
-        .where((log) => log.date.isAfter(weekAgo))
-        .fold(0, (sum, log) => sum + log.amount);
-  }
+  final RxnString errorMessage = RxnString();
 
-  Map<String, double> get waterUsageByCrop {
-    final map = <String, double>{};
-    for (final log in wateringLogs) {
-      map[log.cropId] = (map[log.cropId] ?? 0) + log.amount;
-    }
-    return map;
-  }
+  // ============================================================
+  // LIFECYCLE
+  // ============================================================
 
   @override
   void onInit() {
     super.onInit();
+
     loadWateringLogs();
   }
 
+  // ============================================================
+  // LOAD WATERING LOGS
+  // ============================================================
+
   Future<void> loadWateringLogs() async {
-    isLoading.value = true;
-    errorMessage.value = null;
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      isLoading.value = true;
+      errorMessage.value = null;
 
-      wateringLogs.assignAll([
-        WateringLogModel(
-          id: 'log-1',
-          cropId: 'crop-1',
-          fieldName: 'Field A',
-          date: DateTime(2024, 12, 1, 7, 0),
-          amount: 50.0,
-          notes: 'Morning watering',
-        ),
-        WateringLogModel(
-          id: 'log-2',
-          cropId: 'crop-1',
-          fieldName: 'Field A',
-          date: DateTime(2024, 12, 2, 7, 0),
-          amount: 55.0,
-          notes: 'Morning watering',
-        ),
-        WateringLogModel(
-          id: 'log-3',
-          cropId: 'crop-2',
-          fieldName: 'Field B',
-          date: DateTime(2024, 12, 3, 18, 0),
-          amount: 30.0,
-          notes: 'Evening watering',
-        ),
-        WateringLogModel(
-          id: 'log-4',
-          cropId: 'crop-1',
-          fieldName: 'Field A',
-          date: DateTime(2024, 12, 4, 7, 0),
-          amount: 60.0,
-          notes: 'Increased amount due to dry weather',
-        ),
-      ]);
+      final response = await ApiClient.get(
+        'farmer/watering-logs',
+      );
 
-      isLoading.value = false;
+      final body = _normalizeResponse(response);
+
+      if (body['success'] != true) {
+        throw Exception(
+          body['message']?.toString() ??
+              'Failed to load watering logs.',
+        );
+      }
+
+      final rawData = body['data'];
+
+      if (rawData is! List) {
+        wateringLogs.clear();
+        return;
+      }
+
+      final logs = <WateringModel>[];
+
+      for (final item in rawData) {
+        if (item is! Map) {
+          continue;
+        }
+
+        try {
+          logs.add(
+            WateringModel.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          );
+        } catch (_) {
+          // Ignore one malformed record instead of
+          // breaking the whole watering screen.
+        }
+      }
+
+      wateringLogs.assignAll(logs);
     } catch (e) {
+      errorMessage.value = _cleanError(e);
+    } finally {
       isLoading.value = false;
-      errorMessage.value = e.toString();
     }
   }
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
 
   Future<void> refreshWateringLogs() async {
     await loadWateringLogs();
   }
 
-  void selectCrop(String? cropId) {
-    selectedCropId.value = cropId;
-  }
-
-  void clearCropFilter() {
-    selectedCropId.value = null;
-  }
-
-  Future<bool> addWateringLog(WateringLogModel log) async {
-    try {
-      wateringLogs.add(log);
-      return true;
-    } catch (e) {
-      errorMessage.value = e.toString();
-      return false;
-    }
-  }
-
-  Future<bool> updateWateringLog(
-    String logId,
-    WateringLogModel updatedLog,
-  ) async {
-    try {
-      final index = wateringLogs.indexWhere((log) => log.id == logId);
-      if (index >= 0) {
-        wateringLogs[index] = updatedLog;
-        wateringLogs.refresh();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      errorMessage.value = e.toString();
-      return false;
-    }
-  }
-
-  Future<bool> deleteWateringLog(String logId) async {
-    try {
-      final index = wateringLogs.indexWhere((log) => log.id == logId);
-      if (index >= 0) {
-        wateringLogs.removeAt(index);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      errorMessage.value = e.toString();
-      return false;
-    }
-  }
-
-  WateringLogModel? getLogById(String logId) {
-    try {
-      return wateringLogs.firstWhere((log) => log.id == logId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  List<WateringLogModel> getLogsByCrop(String cropId) {
-    return wateringLogs.where((log) => log.cropId == cropId).toList();
-  }
-
-  List<WateringLogModel> getLogsByDateRange(DateTime start, DateTime end) {
-    return wateringLogs
-        .where(
-          (log) =>
-              log.date.isAfter(start.subtract(const Duration(days: 1))) &&
-              log.date.isBefore(end.add(const Duration(days: 1))),
-        )
-        .toList();
-  }
+  // ============================================================
+  // RECORD WATERING
+  // ============================================================
 
   Future<bool> logWatering({
     required String cropId,
-    required String fieldName,
+    String? fieldName,
     required double amount,
+    required DateTime date,
     String? notes,
   }) async {
-    final log = WateringLogModel(
-      id: 'log-${DateTime.now().millisecondsSinceEpoch}',
-      cropId: cropId,
-      fieldName: fieldName,
-      date: DateTime.now(),
-      amount: amount,
-      notes: notes,
+    try {
+      isSaving.value = true;
+      errorMessage.value = null;
+
+      // cropId is now a String.
+      // Make sure it is not empty and represents a valid ID.
+      final parsedCropId = int.tryParse(cropId);
+
+      if (cropId.trim().isEmpty ||
+          parsedCropId == null ||
+          parsedCropId <= 0) {
+        errorMessage.value = 'Invalid crop.';
+        return false;
+      }
+
+      if (amount <= 0) {
+        errorMessage.value =
+            'Water amount must be greater than 0.';
+        return false;
+      }
+
+      final body = <String, dynamic>{
+        'crop_id': cropId,
+        'watering_date': _formatDate(date),
+        'water_amount': amount,
+      };
+
+      if (notes != null && notes.trim().isNotEmpty) {
+        body['notes'] = notes.trim();
+      }
+
+      /*
+       * fieldName is intentionally not sent.
+       *
+       * The Laravel backend already knows the crop and can
+       * determine the crop's field from crop_id.
+       */
+
+      final response = await ApiClient.post(
+        'farmer/watering-logs',
+        body,
+      );
+
+      final responseBody =
+          _normalizeResponse(response);
+
+      if (responseBody['success'] != true) {
+        throw Exception(
+          responseBody['message']?.toString() ??
+              'Failed to record watering.',
+        );
+      }
+
+      await loadWateringLogs();
+
+      return true;
+    } catch (e) {
+      errorMessage.value = _cleanError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  // ============================================================
+  // ADD WATERING LOG
+  // ============================================================
+
+  Future<bool> addWateringLog({
+    required String cropId,
+    int? fieldId,
+    required DateTime wateringDate,
+    double? waterAmount,
+    String? notes,
+  }) async {
+    try {
+      isSaving.value = true;
+      errorMessage.value = null;
+
+      // cropId is a String because CropModel.id is a String.
+      final parsedCropId = int.tryParse(cropId);
+
+      if (cropId.trim().isEmpty ||
+          parsedCropId == null ||
+          parsedCropId <= 0) {
+        errorMessage.value = 'Invalid crop.';
+        return false;
+      }
+
+      final body = <String, dynamic>{
+        'crop_id': cropId,
+        'watering_date': _formatDate(wateringDate),
+      };
+
+      if (fieldId != null) {
+        body['field_id'] = fieldId;
+      }
+
+      if (waterAmount != null) {
+        body['water_amount'] = waterAmount;
+      }
+
+      if (notes != null && notes.trim().isNotEmpty) {
+        body['notes'] = notes.trim();
+      }
+
+      final response = await ApiClient.post(
+        'farmer/watering-logs',
+        body,
+      );
+
+      final responseBody =
+          _normalizeResponse(response);
+
+      if (responseBody['success'] != true) {
+        throw Exception(
+          responseBody['message']?.toString() ??
+              'Failed to create watering log.',
+        );
+      }
+
+      await loadWateringLogs();
+
+      return true;
+    } catch (e) {
+      errorMessage.value = _cleanError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  // ============================================================
+  // UPDATE WATERING LOG
+  // ============================================================
+
+  Future<bool> updateWateringLog({
+    required String id,
+    String? cropId,
+    int? fieldId,
+    DateTime? wateringDate,
+    double? waterAmount,
+    String? notes,
+  }) async {
+    try {
+      isSaving.value = true;
+      errorMessage.value = null;
+
+      final body = <String, dynamic>{};
+
+      if (cropId != null) {
+        final parsedCropId = int.tryParse(cropId);
+
+        if (cropId.trim().isEmpty ||
+            parsedCropId == null ||
+            parsedCropId <= 0) {
+          errorMessage.value = 'Invalid crop.';
+          return false;
+        }
+
+        body['crop_id'] = cropId;
+      }
+
+      if (fieldId != null) {
+        body['field_id'] = fieldId;
+      }
+
+      if (wateringDate != null) {
+        body['watering_date'] =
+            _formatDate(wateringDate);
+      }
+
+      if (waterAmount != null) {
+        body['water_amount'] = waterAmount;
+      }
+
+      if (notes != null) {
+        body['notes'] = notes.trim();
+      }
+
+      final response = await ApiClient.put(
+        'farmer/watering-logs/$id',
+        body,
+      );
+
+      final responseBody =
+          _normalizeResponse(response);
+
+      if (responseBody['success'] != true) {
+        throw Exception(
+          responseBody['message']?.toString() ??
+              'Failed to update watering log.',
+        );
+      }
+
+      await loadWateringLogs();
+
+      return true;
+    } catch (e) {
+      errorMessage.value = _cleanError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  // ============================================================
+  // DELETE WATERING LOG
+  // ============================================================
+
+  Future<bool> deleteWateringLog(int id) async {
+    try {
+      isSaving.value = true;
+      errorMessage.value = null;
+
+      final response = await ApiClient.delete(
+        'farmer/watering-logs/$id',
+      );
+
+      final body = _normalizeResponse(response);
+
+      if (body['success'] != true) {
+        throw Exception(
+          body['message']?.toString() ??
+              'Failed to delete watering log.',
+        );
+      }
+
+      wateringLogs.removeWhere(
+        (log) => log.id == id,
+      );
+
+      wateringLogs.refresh();
+
+      return true;
+    } catch (e) {
+      errorMessage.value = _cleanError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  // ============================================================
+  // GET LOGS FOR CROP
+  // ============================================================
+
+  List<WateringModel> getLogsByCrop(String cropId) {
+    final logs = wateringLogs
+        .where(
+          (log) => log.cropId == cropId,
+        )
+        .toList();
+
+    logs.sort(
+      (a, b) => b.wateringDate.compareTo(
+        a.wateringDate,
+      ),
     );
-    return addWateringLog(log);
+
+    return logs;
+  }
+
+  // ============================================================
+  // SAME AS getLogsByCrop
+  // ============================================================
+
+  List<WateringModel> getLogsForCrop(String cropId) {
+    return getLogsByCrop(cropId);
+  }
+
+  // ============================================================
+  // GET LAST WATERING
+  // ============================================================
+
+  WateringModel? getLastWatering(String cropId) {
+    final logs = getLogsByCrop(cropId);
+
+    if (logs.isEmpty) {
+      return null;
+    }
+
+    return logs.first;
+  }
+
+  // ============================================================
+  // SAME AS getLastWatering
+  // ============================================================
+
+  WateringModel? getLatestLogForCrop(String cropId) {
+    return getLastWatering(cropId);
+  }
+
+  // ============================================================
+  // HAS WATERED TODAY
+  // ============================================================
+
+  bool hasWateredToday(String cropId) {
+    final today = _dateOnly(DateTime.now());
+
+    return wateringLogs.any(
+      (log) {
+        if (log.cropId != cropId) {
+          return false;
+        }
+
+        final wateringDate =
+            _dateOnly(log.wateringDate);
+
+        return wateringDate == today;
+      },
+    );
+  }
+
+  // ============================================================
+  // TOTAL WATER USED TODAY
+  // ============================================================
+
+  double get totalWaterUsedToday {
+    final today = _dateOnly(DateTime.now());
+
+    return wateringLogs
+        .where(
+          (log) =>
+              _dateOnly(log.wateringDate) == today,
+        )
+        .fold<double>(
+          0,
+          (total, log) =>
+              total + (log.waterAmount ?? 0),
+        );
+  }
+
+  // ============================================================
+  // TOTAL WATER USED THIS WEEK
+  // ============================================================
+
+  double get totalWaterUsedThisWeek {
+    final now = DateTime.now();
+
+    final today = _dateOnly(now);
+
+    /*
+     * Monday is the first day of the week.
+     */
+
+    final daysFromMonday =
+        today.weekday - DateTime.monday;
+
+    final startOfWeek = today.subtract(
+      Duration(days: daysFromMonday),
+    );
+
+    return wateringLogs
+        .where(
+          (log) {
+            final date =
+                _dateOnly(log.wateringDate);
+
+            return !date.isBefore(startOfWeek) &&
+                !date.isAfter(today);
+          },
+        )
+        .fold<double>(
+          0,
+          (total, log) =>
+              total + (log.waterAmount ?? 0),
+        );
+  }
+
+  // ============================================================
+  // TOTAL WATER FOR CROP
+  // ============================================================
+
+  double getTotalWaterForCrop(String cropId) {
+    return getLogsByCrop(cropId).fold<double>(
+      0,
+      (total, log) =>
+          total + (log.waterAmount ?? 0),
+    );
+  }
+
+  // ============================================================
+  // LAST WATERING AMOUNT
+  // ============================================================
+
+  double getLastWaterAmount(String cropId) {
+    final last = getLastWatering(cropId);
+
+    return last?.waterAmount ?? 0;
+  }
+
+  // ============================================================
+  // RESPONSE NORMALIZER
+  // ============================================================
+
+  Map<String, dynamic> _normalizeResponse(
+    dynamic response,
+  ) {
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+
+    if (response is Map) {
+      return Map<String, dynamic>.from(response);
+    }
+
+    throw Exception(
+      'Invalid server response.',
+    );
+  }
+
+  // ============================================================
+  // DATE FORMAT
+  // ============================================================
+
+  String _formatDate(DateTime date) {
+    final year =
+        date.year.toString().padLeft(4, '0');
+
+    final month =
+        date.month.toString().padLeft(2, '0');
+
+    final day =
+        date.day.toString().padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
+
+  // ============================================================
+  // DATE ONLY
+  // ============================================================
+
+  DateTime _dateOnly(DateTime date) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+  }
+
+  // ============================================================
+  // ERROR
+  // ============================================================
+
+  String _cleanError(dynamic error) {
+    final message = error.toString();
+
+    if (message.startsWith('Exception: ')) {
+      return message.substring(
+        'Exception: '.length,
+      );
+    }
+
+    return message;
+  }
+
+  // ============================================================
+  // CLEAR ERROR
+  // ============================================================
+
+  void clearError() {
+    errorMessage.value = null;
   }
 }

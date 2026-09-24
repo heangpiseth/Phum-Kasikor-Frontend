@@ -3,12 +3,15 @@ import 'package:get/get.dart';
 import 'package:phum_kasikors/color/color.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_profile_controller.dart';
 
-
-class CostumerProfileScreen extends GetView<ProfileController> {
+class CostumerProfileScreen extends StatelessWidget {
   const CostumerProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.isRegistered<ProfileController>()
+        ? Get.find<ProfileController>()
+        : Get.put(ProfileController());
+
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -16,34 +19,63 @@ class CostumerProfileScreen extends GetView<ProfileController> {
           Center(
             child: Column(
               children: [
-                Obx(() => CircleAvatar(
-                      radius: 40,
-                      backgroundImage: NetworkImage(controller.avatarUrl.value),
-                    )),
+                Obx(
+                  () => CircleAvatar(
+                    radius: 40,
+                    backgroundImage: NetworkImage(controller.avatarUrl.value),
+                  ),
+                ),
                 const SizedBox(height: 10),
-                Obx(() => Text(controller.userName.value,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                Obx(() => Text('Member since ${controller.memberSince.value}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-                Obx(() => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
-                        Text(controller.location.value,
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      ],
-                    )),
+                Obx(
+                  () => Text(
+                    controller.userName.value,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Obx(
+                  () => Text(
+                    'Member since ${controller.memberSince.value}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Obx(
+                  () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      Text(
+                        controller.location.value,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Obx(() => Row(
-                children: [
-                  _statCard('Orders', controller.ordersCount.value),
-                  _statCard('Favorites', controller.favoritesCount.value),
-                  _statCard('Reviews', controller.reviewsCount.value),
-                ],
-              )),
+          Obx(
+            () => Row(
+              children: [
+                _statCard('Orders', controller.ordersCount.value),
+                _statCard('Favorites', controller.favoritesCount.value),
+                _statCard('Reviews', controller.reviewsCount.value),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
           _menuTile(Icons.receipt_long, 'My Orders', badge: 12),
           _menuTile(Icons.favorite_border, 'Favorite Farms'),
@@ -77,9 +109,20 @@ class CostumerProfileScreen extends GetView<ProfileController> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(
             children: [
-              Text('$value',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              Text(
+                '$value',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -87,11 +130,19 @@ class CostumerProfileScreen extends GetView<ProfileController> {
     );
   }
 
-  Widget _menuTile(IconData icon, String label, {int? badge, bool highlight = false}) {
+  Widget _menuTile(
+    IconData icon,
+    String label, {
+    int? badge,
+    bool highlight = false,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(icon, color: highlight ? AppColors.primary : AppColors.textPrimary),
+        leading: Icon(
+          icon,
+          color: highlight ? AppColors.primary : AppColors.textPrimary,
+        ),
         title: Text(label),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -104,9 +155,16 @@ class CostumerProfileScreen extends GetView<ProfileController> {
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('$badge', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                child: Text(
+                  '$badge',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
               ),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
           ],
         ),
       ),

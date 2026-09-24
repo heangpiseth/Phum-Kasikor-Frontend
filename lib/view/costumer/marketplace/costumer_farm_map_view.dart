@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phum_kasikors/color/color.dart';
 import 'package:phum_kasikors/controller/costumer/farm_map_controller.dart';
+import 'package:phum_kasikors/model/customer/costumer_farm_model.dart';
 import 'package:phum_kasikors/widgets/costumer/rating_stars.dart';
 
 class FarmMapView extends GetView<FarmMapController> {
@@ -13,24 +14,29 @@ class FarmMapView extends GetView<FarmMapController> {
       body: SafeArea(
         child: Stack(
           children: [
-            // --- Map / list body ---
-            Obx(
-              () => controller.displayMode.value == FarmMapDisplayMode.map
+            Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (controller.errorMessage.value.isNotEmpty) {
+                return Center(child: Text(controller.errorMessage.value));
+              }
+              return controller.displayMode.value == FarmMapDisplayMode.map
                   ? _MapCanvas(controller: controller)
-                  : _FarmListView(controller: controller),
-            ),
+                  : _FarmListView(controller: controller);
+            }),
 
-            // --- Back button ---
             Positioned(
               top: 8,
               left: 8,
               child: RoundIconButton(
                 icon: Icons.arrow_back,
-                onTap: () => Get.back(), backgroundColor: const Color(0xFFE0E0E0), iconColor: const Color(0xFF616161),
+                onTap: () => Get.back(),
+                backgroundColor: const Color(0xFFE0E0E0),
+                iconColor: const Color(0xFF616161),
               ),
             ),
 
-            // --- Map View / List View segmented toggle ---
             Positioned(
               top: 8,
               left: 60,
@@ -63,7 +69,6 @@ class FarmMapView extends GetView<FarmMapController> {
               ),
             ),
 
-            // --- Recenter button ---
             Positioned(
               top: 8,
               right: 8,
@@ -76,18 +81,20 @@ class FarmMapView extends GetView<FarmMapController> {
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 },
-                backgroundColor: const Color(0xFFE0E0E0), 
+                backgroundColor: const Color(0xFFE0E0E0),
                 iconColor: const Color(0xFF616161),
               ),
             ),
 
-            // --- Bottom farm info card ---
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: Obx(() {
                 final farm = controller.selectedFarm;
+                if (farm == null) {
+                  return const SizedBox.shrink();
+                }
                 return _FarmInfoCard(controller: controller, farm: farm);
               }),
             ),
@@ -124,15 +131,17 @@ class FarmMapView extends GetView<FarmMapController> {
   }
 }
 
-/// A small circular icon button used for the back / recenter controls.
-///
-/// NOTE: this must extend StatelessWidget (not be a plain class with a
-/// `build()` method) or Flutter has no way to mount it in the widget tree.
 class RoundIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const RoundIconButton({super.key, required this.icon, required this.onTap, required Color backgroundColor, required Color iconColor});
+  const RoundIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    required Color backgroundColor,
+    required Color iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +153,9 @@ class RoundIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 6),
+          ],
         ),
         child: Icon(icon, size: 20, color: AppColors.textPrimary),
       ),
@@ -152,8 +163,6 @@ class RoundIconButton extends StatelessWidget {
   }
 }
 
-/// Stylized placeholder "map" — a soft green field with pins for each farm.
-/// Swap this for google_maps_flutter / mapbox_gl once you wire a real map SDK.
 class _MapCanvas extends StatelessWidget {
   final FarmMapController controller;
   const _MapCanvas({required this.controller});
@@ -169,14 +178,13 @@ class _MapCanvas extends StatelessWidget {
           children: List.generate(controller.farms.length, (i) {
             final farm = controller.farms[i];
             final selected = farm.id == controller.selectedFarmId.value;
-            // Spread pins out in a simple deterministic pattern.
             final left = 60.0 + (i * 90) % 260;
             final top = 140.0 + (i * 130) % 320;
             return Positioned(
               left: left,
               top: top,
               child: GestureDetector(
-                onTap: () => controller.selectFarm(farm.id),
+                onTap: () => controller.selectFarm(farm.id.toString()),
                 child: AnimatedScale(
                   duration: const Duration(milliseconds: 150),
                   scale: selected ? 1.15 : 1.0,
@@ -191,17 +199,19 @@ class _MapCanvas extends StatelessWidget {
                           color: selected ? AppColors.primary : Colors.white,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 4),
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                            ),
                           ],
                         ),
                         child: Text(
-                          farm.name,
+                          farm.farmName,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textPrimary,
+                            color:
+                                selected ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -239,7 +249,7 @@ class _FarmListView extends StatelessWidget {
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
-              onTap: () => controller.selectFarm(farm.id),
+              onTap: () => controller.selectFarm(farm.id.toString()),
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
@@ -247,13 +257,22 @@ class _FarmListView extends StatelessWidget {
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 50,
+                    height: 50,
+                    color: AppColors.divider,
+                    child: const Icon(Icons.agriculture),
+                  ),
                 ),
               ),
               title: Text(
-                farm.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                farm.farmName,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text('${farm.province} • ${farm.distanceKm}km away'),
+              subtitle: Text(
+                '${farm.location} • ${farm.distanceKm}km away',
+              ),
               trailing: RatingStars(rating: farm.rating),
             ),
           );
@@ -265,7 +284,8 @@ class _FarmListView extends StatelessWidget {
 
 class _FarmInfoCard extends StatelessWidget {
   final FarmMapController controller;
-  final dynamic farm;
+  final FarmModel farm;
+
   const _FarmInfoCard({required this.controller, required this.farm});
 
   @override
@@ -275,7 +295,9 @@ class _FarmInfoCard extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black26, blurRadius: 10),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -290,6 +312,12 @@ class _FarmInfoCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 56,
+                    height: 56,
+                    color: AppColors.divider,
+                    child: const Icon(Icons.agriculture),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -306,7 +334,7 @@ class _FarmInfoCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${farm.province} • ${farm.distanceKm}km away',
+                      '${farm.location} • ${farm.distanceKm}km away',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -323,7 +351,7 @@ class _FarmInfoCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton(
-                onPressed: () => controller.openFarmDetail(farm.id),
+                onPressed: () => controller.openFarmDetail(farm.id.toString()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
@@ -333,7 +361,8 @@ class _FarmInfoCard extends StatelessWidget {
                 child: const Text('View Details'),
               ),
               OutlinedButton(
-                onPressed: () => controller.openFarmProducts(farm.id),
+                onPressed: () =>
+                    controller.openFarmProducts(farm.id.toString()),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary),

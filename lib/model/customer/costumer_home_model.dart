@@ -35,32 +35,6 @@ class FarmModel {
 }
 
 // ============================================================
-// PRODUCT MODEL
-// ============================================================
-
-class ProductModel {
-  final String id;
-  final String name;
-  final String imageUrl;
-  final double price;
-  final String unit;
-  final String priceLocal;
-  final String farmName;
-  final double rating;
-
-  ProductModel({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-    required this.price,
-    required this.unit,
-    required this.priceLocal,
-    required this.farmName,
-    required this.rating,
-  });
-}
-
-// ============================================================
 // NEARBY FARM MODEL
 // ============================================================
 

@@ -9,12 +9,17 @@ import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 import 'package:phum_kasikors/view/costumer/marketplace/costumer_product_card.dart';
 import 'package:phum_kasikors/widgets/costumer/categorychip.dart';
 
-class ExploreView extends GetView<ExploreController> {
+class ExploreView extends StatelessWidget {
   const ExploreView({super.key});
 
-  @override
   Widget build(BuildContext context) {
-    final cart = Get.find<CartController>();
+  final controller = Get.isRegistered<ExploreController>()
+      ? Get.find<ExploreController>()
+      : Get.put(ExploreController());
+
+  final cart = Get.isRegistered<CartController>()
+      ? Get.find<CartController>()
+      : Get.put(CartController());
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,7 +77,7 @@ class ExploreView extends GetView<ExploreController> {
                 crossAxisCount: 4,
                 mainAxisSpacing: 14,
                 crossAxisSpacing: 8,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.5,
               ),
               itemBuilder: (_, i) {
                 final c = controller.categories[i];
@@ -156,6 +161,18 @@ class ExploreView extends GetView<ExploreController> {
             ),
             const SizedBox(height: 10),
             Obx(() {
+              if (controller.isLoading.value) {
+                return const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (controller.errorMessage.value.isNotEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(child: Text(controller.errorMessage.value)),
+                );
+              }
               if (controller.popularProducts.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(24),

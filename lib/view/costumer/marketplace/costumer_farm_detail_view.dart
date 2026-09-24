@@ -14,132 +14,148 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
   @override
   Widget build(BuildContext context) {
     final cart = Get.find<CartController>();
-    final farm = controller.farm;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: NestedScrollView(
-          headerSliverBuilder: (context, _) => [
-            SliverAppBar(
-              expandedHeight: 180,
-              pinned: true,
-              leading: const BackButton(color: Colors.white),
-              flexibleSpace: FlexibleSpaceBar(
-                background: Image.network(
-                  farm.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.divider,
-                    child: const Icon(Icons.agriculture, size: 48),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.value.isNotEmpty) {
+            return Center(child: Text(controller.errorMessage.value));
+          }
+
+          final farm = controller.farm;
+          if (farm == null) {
+            return const Center(child: Text('Farm not found'));
+          }
+
+          return NestedScrollView(
+            headerSliverBuilder: (context, _) => [
+              SliverAppBar(
+                expandedHeight: 180,
+                pinned: true,
+                leading: const BackButton(color: Colors.white),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Image.network(
+                    farm.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: AppColors.divider,
+                      child: const Icon(Icons.agriculture, size: 48),
+                    ),
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  farm.name,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    farm.name,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified,
-                                color: AppColors.primary,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Obx(
-                          () => OutlinedButton(
-                            onPressed: controller.toggleFollow,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: controller.isFollowing.value
-                                  ? Colors.white
-                                  : AppColors.primary,
-                              backgroundColor: controller.isFollowing.value
-                                  ? AppColors.primary
-                                  : Colors.transparent,
-                              side: const BorderSide(color: AppColors.primary),
-                            ),
-                            child: Text(
-                              controller.isFollowing.value
-                                  ? 'Following'
-                                  : 'Follow',
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${farm.province} • Verified Organic Certified ✓',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                          Obx(
+                            () => OutlinedButton(
+                              onPressed: controller.toggleFollow,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor:
+                                    controller.isFollowing.value
+                                        ? Colors.white
+                                        : AppColors.primary,
+                                backgroundColor:
+                                    controller.isFollowing.value
+                                        ? AppColors.primary
+                                        : Colors.transparent,
+                                side:
+                                    const BorderSide(color: AppColors.primary),
+                              ),
+                              child: Text(
+                                controller.isFollowing.value
+                                    ? 'Following'
+                                    : 'Follow',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        RatingStars(
-                          rating: farm.rating,
-                          reviewCount: farm.reviewCount,
+                      const SizedBox(height: 4),
+                      Text(
+                        '${farm.location} • Verified Organic Certified ✓',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '${farm.productCount} Products',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          RatingStars(
+                            rating: farm.rating,
+                            reviewCount: controller.reviews.length,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 10),
+                          Text(
+                            '${farm.description} Products',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _TabBarDelegate(
-                const TabBar(
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.primary,
-                  tabs: [
-                    Tab(text: 'Products'),
-                    Tab(text: 'About'),
-                    Tab(text: 'Reviews'),
-                  ],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarDelegate(
+                  const TabBar(
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    tabs: [
+                      Tab(text: 'Products'),
+                      Tab(text: 'About'),
+                      Tab(text: 'Reviews'),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-          body: TabBarView(
-            children: [
-              _ProductsTab(controller: controller, cart: cart),
-              _AboutTab(controller: controller),
-              _ReviewsTab(controller: controller),
             ],
-          ),
-        ),
+            body: TabBarView(
+              children: [
+                _ProductsTab(controller: controller, cart: cart, farm: farm),
+                _AboutTab(controller: controller),
+                _ReviewsTab(controller: controller),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -148,8 +164,9 @@ class CostumerFarmDetailView extends GetView<FarmDetailController> {
 class _ProductsTab extends StatelessWidget {
   final FarmDetailController controller;
   final CartController cart;
+  final dynamic farm;
 
-  const _ProductsTab({required this.controller, required this.cart});
+  const _ProductsTab({required this.controller, required this.cart, required this.farm});
 
   static const _categories = ['All', 'Vegetables', 'Fruits', 'Rice'];
 
@@ -166,7 +183,8 @@ class _ProductsTab extends StatelessWidget {
               itemCount: _categories.length,
               itemBuilder: (_, i) {
                 final c = _categories[i];
-                final selected = controller.selectedCategory.value == c;
+                final selected =
+                    controller.selectedCategory.value == c;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -209,20 +227,21 @@ class _ProductsTab extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: controller.products.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 0.78,
             ),
-              itemBuilder: (_, i) {
-                final ProductModel p = controller.products[i];
-                return ProductCard(
-                  product: p ,
-                  onTap: () => controller.openProduct(p),
-                  onAdd: () => cart.addProduct(p),
-                );
-              },
+            itemBuilder: (_, i) {
+              final ProductModel p = controller.products[i];
+              return ProductCard(
+                product: p,
+                onTap: () => controller.openProduct(p),
+                onAdd: () => cart.addProduct(p),
+              );
+            },
           );
         }),
       ],
@@ -237,31 +256,40 @@ class _AboutTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final farm = controller.farm;
+    if (farm == null) {
+      return const Center(child: Text('Farm not found'));
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         const Text(
           'About this farm',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
-          farm.about.isEmpty ? 'No description provided yet.' : farm.about,
+          farm.description.isEmpty
+              ? 'No description provided yet.'
+              : farm.description,
         ),
         const SizedBox(height: 16),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: CircleAvatar(
             backgroundColor: AppColors.divider,
-            backgroundImage: farm.ownerAvatarUrl.isEmpty
+            backgroundImage:
+                farm.coverImage?.isNotEmpty == true && farm.coverImage != null
+                    ? NetworkImage(farm.coverImage!)
+                    : null,
+            child: farm.coverImage?.isNotEmpty == true && farm.coverImage != null
                 ? null
-                : NetworkImage(farm.ownerAvatarUrl),
-            child: farm.ownerAvatarUrl.isEmpty
-                ? const Icon(Icons.person, color: Colors.white)
-                : null,
+                : const Icon(Icons.person, color: Colors.white),
           ),
-          title: Text(farm.ownerName),
+          title: Text(farm.name),
           subtitle: const Text('Farmer / Owner'),
           trailing: const Icon(Icons.phone, color: AppColors.primary),
         ),
@@ -319,7 +347,11 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(color: AppColors.background, child: tabBar);
   }
 

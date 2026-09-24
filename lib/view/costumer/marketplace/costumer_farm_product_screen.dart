@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_product_controller.dart';
 import 'package:phum_kasikors/core/routes/app_routes.dart';
-import 'package:phum_kasikors/model/customer/costumer_product_model.dart' hide ProductCategory;
+import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
 
 class FarmProductsScreen extends StatefulWidget {
   const FarmProductsScreen({super.key});
 
   @override
-  State<FarmProductsScreen> createState() =>
-      _FarmProductsScreenState();
+  State<FarmProductsScreen> createState() => _FarmProductsScreenState();
 }
 
-class _FarmProductsScreenState
-    extends State<FarmProductsScreen> {
+class _FarmProductsScreenState extends State<FarmProductsScreen> {
   late final FarmProductsController controller;
   late final String _tag;
 
@@ -71,9 +69,7 @@ class _FarmProductsScreenState
 
         if (products.isEmpty) {
           return const Center(
-            child: Text(
-              'No products found for this farm.',
-            ),
+            child: Text('No products found for this farm.'),
           );
         }
 
@@ -94,7 +90,6 @@ class _FarmProductsScreenState
                 ),
                 itemBuilder: (context, index) {
                   final product = products[index];
-
                   return _buildProductCard(product);
                 },
               ),
@@ -106,35 +101,32 @@ class _FarmProductsScreenState
   }
 
   Widget _buildCategoryFilter() {
-    return SizedBox(
-      height: 50,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-        ),
-        scrollDirection: Axis.horizontal,
-        children: ProductCategory.values.map((category) {
-          return Obx(() {
-            final selected =
-                controller.selectedCategory.value ==
-                    category;
+    return Obx(() {
+      final categories = ['All', ...controller.availableCategories];
+      return SizedBox(
+        height: 50,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          scrollDirection: Axis.horizontal,
+          children: categories.map((category) {
+            return Obx(() {
+              final selected = controller.selectedCategory.value == category;
 
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(
-                  _categoryLabel(category),
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(category),
+                  selected: selected,
+                  onSelected: (_) {
+                    controller.selectCategory(category == 'All' ? null : category);
+                  },
                 ),
-                selected: selected,
-                onSelected: (_) {
-                  controller.selectCategory(category);
-                },
-              ),
-            );
-          });
-        }).toList(),
-      ),
-    );
+              );
+            });
+          }).toList(),
+        ),
+      );
+    });
   }
 
   Widget _buildProductCard(ProductModel product) {
@@ -150,28 +142,32 @@ class _FarmProductsScreenState
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
                     width: double.infinity,
-                    child: Image.network(
-                      product.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 40,
+                    child: product.images.isNotEmpty && product.images[0].image != null
+                        ? Image.network(
+                            product.images[0].image!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 40,
+                                ),
+                              );
+                            },
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 40,
+                            ),
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ),
               ),
@@ -190,7 +186,7 @@ class _FarmProductsScreenState
               const SizedBox(height: 4),
 
               Text(
-                product.priceLabel,
+                '\$${product.price.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
@@ -202,32 +198,21 @@ class _FarmProductsScreenState
                 width: double.infinity,
                 height: 36,
                 child: Obx(() {
-                  final inCart =
-                      controller.isInCart(product.id);
+                  final inCart = controller.isInCart(product.id.toString());
 
                   return ElevatedButton.icon(
                     onPressed: () {
                       if (inCart) {
-                        controller.removeFromCart(
-                          product,
-                        );
+                        controller.removeFromCart(product);
                       } else {
-                        controller.addToCart(
-                          product,
-                        );
+                        controller.addToCart(product);
                       }
                     },
                     icon: Icon(
-                      inCart
-                          ? Icons.check
-                          : Icons.add_shopping_cart,
+                      inCart ? Icons.check : Icons.add_shopping_cart,
                       size: 18,
                     ),
-                    label: Text(
-                      inCart
-                          ? 'Added'
-                          : 'Add',
-                    ),
+                    label: Text(inCart ? 'Added' : 'Add'),
                   );
                 }),
               ),
@@ -237,38 +222,4 @@ class _FarmProductsScreenState
       ),
     );
   }
-
-  String _categoryLabel(ProductCategory category) {
-    switch (category) {
-      case ProductCategory.all:
-        return 'All';
-
-      case ProductCategory.vegetables:
-        return 'Vegetables';
-
-      case ProductCategory.fruits:
-        return 'Fruits';
-
-      case ProductCategory.rice:
-        return 'Rice';
-
-      case ProductCategory.herbs:
-        return 'Herbs';
-
-      case ProductCategory.dairy:
-        return 'Dairy';
-
-      case ProductCategory.processed:
-        return 'Processed';
-
-      case ProductCategory.organic:
-        return 'Organic';
-
-      case ProductCategory.specialty:
-        return 'Specialty';
-    }
-  }
-}
-
-extension on FarmProductsController {
 }

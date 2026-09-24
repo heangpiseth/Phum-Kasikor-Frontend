@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:get/get.dart';
 
 import 'package:phum_kasikors/controller/costumer/costumer_cart_controller.dart';
-import 'package:phum_kasikors/controller/costumer/costumer_orders_list_controller.dart';
 import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/model/customer/costumer_order_model.dart';
 
@@ -13,6 +12,7 @@ class PaymentController extends GetxController {
   late final OrderModel order;
 
   static const int _windowSeconds = 15 * 60;
+
   final remainingSeconds = _windowSeconds.obs;
 
   Timer? _timer;
@@ -22,11 +22,13 @@ class PaymentController extends GetxController {
     super.onInit();
 
     final args = Get.arguments;
+
     if (args is! OrderModel) {
       throw ArgumentError(
         'PaymentController expects an OrderModel in Get.arguments.',
       );
     }
+
     order = args;
 
     _startTimer();
@@ -34,14 +36,18 @@ class PaymentController extends GetxController {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (remainingSeconds.value <= 0) {
-        timer.cancel();
-        onWindowExpired();
-      } else {
-        remainingSeconds.value--;
-      }
-    });
+
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (remainingSeconds.value <= 0) {
+          timer.cancel();
+          onWindowExpired();
+        } else {
+          remainingSeconds.value--;
+        }
+      },
+    );
   }
 
   void onWindowExpired() {
@@ -55,6 +61,7 @@ class PaymentController extends GetxController {
   String get formattedTime {
     final minutes = remainingSeconds.value ~/ 60;
     final seconds = remainingSeconds.value % 60;
+
     return '${minutes.toString().padLeft(2, '0')}:'
         '${seconds.toString().padLeft(2, '0')}';
   }
@@ -62,10 +69,8 @@ class PaymentController extends GetxController {
   void confirmPaymentCompleted() {
     _timer?.cancel();
 
-    order.status = OrderStatus.paymentConfirmed;
-    if (Get.isRegistered<OrdersListController>()) {
-      Get.find<OrdersListController>().addOrder(order);
-    }
+    order.status = OrderStatus.confirmed;
+
     cart.clearCart();
 
     Get.offNamed(

@@ -1,33 +1,76 @@
+class EarningsPoint {
+  final String month;
+  final double amount;
+
+  EarningsPoint({
+    required this.month,
+    required this.amount,
+  });
+
+  factory EarningsPoint.fromJson(Map<String, dynamic> json) {
+    return EarningsPoint(
+      month: json['month']?.toString() ?? '',
+      amount: _toDouble(json['amount']),
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) {
+      return 0.0;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+}
+
 class EarningsModel {
-  double totalEarnings;
-  double growth;
-  int ordersCompleted;
-  double avgOrderValue;
-  double pendingPayout;
-  List<double> weeklyIncome;
-  List<TransactionModel> transactions;
+  final double totalEarnings;
+  final double thisMonth;
+  final List<EarningsPoint> monthlyEarnings;
 
   EarningsModel({
     required this.totalEarnings,
-    required this.growth,
-    required this.ordersCompleted,
-    required this.avgOrderValue,
-    required this.pendingPayout,
-    required this.weeklyIncome,
-    required this.transactions,
+    required this.thisMonth,
+    required this.monthlyEarnings,
   });
-}
 
-class TransactionModel {
-  String title;
-  String date;
-  double amount;
-  bool isIncome;
+  factory EarningsModel.fromJson(Map<String, dynamic> json) {
+    final rawMonthly = json['monthly_earnings'];
 
-  TransactionModel({
-    required this.title,
-    required this.date,
-    required this.amount,
-    required this.isIncome,
-  });
+    final monthly = <EarningsPoint>[];
+
+    if (rawMonthly is List) {
+      for (final item in rawMonthly) {
+        if (item is Map) {
+          monthly.add(
+            EarningsPoint.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          );
+        }
+      }
+    }
+
+    return EarningsModel(
+      totalEarnings: _toDouble(json['total_earnings']),
+      thisMonth: _toDouble(json['this_month']),
+      monthlyEarnings: monthly,
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) {
+      return 0.0;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
 }

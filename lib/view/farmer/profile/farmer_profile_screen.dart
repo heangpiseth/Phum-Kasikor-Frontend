@@ -1,272 +1,1499 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:phum_kasikors/color/color.dart';
+import 'package:image_picker/image_picker.dart';
+
 import 'package:phum_kasikors/controller/farmer/profile_controller.dart';
-import 'package:phum_kasikors/view/farmer/Farm/farmer_farm_profile.dart';
+import 'package:phum_kasikors/core/constants/app_constants.dart';
+import 'package:phum_kasikors/core/routes/app_routes.dart';
+import 'package:phum_kasikors/view/Auth/wecome_screen.dart';
+import 'package:phum_kasikors/view/farmer/farmer_design.dart';
+import 'package:phum_kasikors/view/farmer/profile/farmer_camera_screen.dart';
+
+// ================================================================
+// FARMER PROFILE COLORS
+// ================================================================
+
+const Color farmerDeepGreen = Color(0xFF14532D);
+const Color farmerGreen = Color(0xFF2E7D32);
+const Color farmerLightGreen = Color(0xFFEAF6EA);
+const Color farmerSoftGreen = Color(0xFFF3FAF3);
+const Color farmerTextDark = Color(0xFF1F2A21);
+const Color farmerTextGrey = Color(0xFF718071);
 
 class FarmerProfileScreen extends StatelessWidget {
   const FarmerProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<FarmerProfileController>();
+    final controller =
+        Get.isRegistered<FarmerProfileController>()
+            ? Get.find<FarmerProfileController>()
+            : Get.put(FarmerProfileController());
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FCF8),
-      body: SafeArea(
-        child: Obx(() {
-          final profile = controller.profile.value;
-          return Column(
-            children: [
-              const _ProfileAppBar(),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: controller.refreshProfile,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
-                    children: [
-                      _Header(name: profile?.name ?? 'Sokha Nam'),
-                      const SizedBox(height: 12),
-                      _Stats(
-                        products: profile?.products ?? 24,
-                        orders: profile?.orders ?? 156,
-                        rating: profile?.rating ?? 4.8,
-                      ),
-                      const SizedBox(height: 10),
-                      _FarmHelpCard(onTap: () => _message('Farm Assistant')),
-                      const SizedBox(height: 10),
-                      _SettingTile(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Edit Profile Info',
-                        subtitle: 'Name, phone, identity verification',
-                        onTap: controller.editProfile,
-                      ),
-                      _SettingTile(
-                        icon: Icons.agriculture_outlined,
-                        title: 'My Farm Details',
-                        subtitle: 'Farm size, irrigation, crop varieties',
-                        onTap: () => Get.to(() => const FarmerFarmProfile()),
-                      ),
-                      _SettingTile(
-                        icon: Icons.account_balance_wallet_outlined,
-                        title: 'Payment & ABA Settings',
-                        subtitle: '•••• 4892 (Sokha V.)',
-                        trailing: const _ConnectedBadge(),
-                        onTap: () => _message('Payment & ABA Settings'),
-                      ),
-                      _SettingTile(
-                        icon: Icons.notifications_none_rounded,
-                        title: 'Notification Preferences',
-                        subtitle: 'Order alerts, price shifts, SMS',
-                        onTap: () => _message('Notification Preferences'),
-                      ),
-                      _SettingTile(
-                        icon: Icons.language_rounded,
-                        title: 'Language',
-                        subtitle: 'App interface language',
-                        trailingText: 'ភាសាខ្មែរ / EN',
-                        onTap: () => _message('Language'),
-                      ),
-                      _SettingTile(
-                        icon: Icons.headset_mic_outlined,
-                        title: 'Help & Customer Support',
-                        subtitle: 'Agronomist hotline & live chat',
-                        onTap: () => _message('Customer Support'),
-                      ),
-                      _SettingTile(
-                        icon: Icons.description_outlined,
-                        title: 'Terms & Privacy Policy',
-                        subtitle: 'Produce standards & marketplace rules',
-                        onTap: () => _message('Terms & Privacy Policy'),
-                      ),
-                      const SizedBox(height: 2),
-                      OutlinedButton.icon(
-                        onPressed: controller.logout,
-                        icon: const Icon(Icons.logout_rounded, size: 17),
-                        label: const Text('Log Out Account'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(42),
-                          foregroundColor: AppColors.danger,
-                          side: const BorderSide(color: Color(0xFFFFC7C7)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Phum Kasikor Farmer • Version 1.2.4\nEmpowering Cambodian Agriculture Communities',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 8, color: AppColors.textHint),
-                      ),
-                    ],
+      backgroundColor: FarmerDesign.background,
+
+      // ==========================================================
+      // APP BAR
+      // ==========================================================
+
+      appBar: AppBar(
+        backgroundColor: FarmerDesign.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+
+        title: const Text(
+          'My Profile',
+          style: TextStyle(
+            color: farmerDeepGreen,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+
+        actions: [
+          IconButton(
+            tooltip: 'Edit profile',
+            onPressed: () =>
+                _openEditProfile(controller),
+            icon: const Icon(
+              Icons.edit_outlined,
+              color: farmerDeepGreen,
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+      ),
+
+      // ==========================================================
+      // BODY
+      // ==========================================================
+
+      body: Obx(
+        () {
+          if (controller.isLoading.value &&
+              controller.userInfo.value == null) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: farmerGreen,
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            color: farmerGreen,
+            backgroundColor: Colors.white,
+            onRefresh: controller.refreshProfile,
+
+            child: ListView(
+              physics:
+                  const AlwaysScrollableScrollPhysics(),
+
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                35,
+              ),
+
+              children: [
+                _buildHero(
+                  context,
+                  controller,
+                ),
+
+                const SizedBox(height: 18),
+
+                _buildStats(),
+
+                const SizedBox(height: 26),
+
+                _buildSectionHeader(),
+
+                const SizedBox(height: 13),
+
+                _buildSettings(
+                  controller,
+                ),
+
+                const SizedBox(height: 26),
+
+                _buildLogout(),
+
+                const SizedBox(height: 18),
+
+                const Center(
+                  child: Text(
+                    'Phum Kasikor Farmer',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: farmerTextGrey,
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 3),
+
+                const Center(
+                  child: Text(
+                    'Version 1.2.4',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFFA0ACA0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
-        }),
+        },
       ),
     );
   }
 
-  void _message(String title) => Get.snackbar(title, 'This feature will be available soon.');
-}
+  // ==============================================================
+  // HERO
+  // ==============================================================
 
-class _ProfileAppBar extends StatelessWidget {
-  const _ProfileAppBar();
-  @override
-  Widget build(BuildContext context) => Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: const BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Color(0x10000000), blurRadius: 4)]),
-        child: const Row(children: [
-          Icon(Icons.menu_rounded, size: 20),
-          SizedBox(width: 13),
-          Text('Phum Kasikor', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w800)),
-          Spacer(),
-          Icon(Icons.notifications_none_rounded, color: AppColors.textSecondary, size: 18),
-        ]),
-      );
-}
+  Widget _buildHero(
+    BuildContext context,
+    FarmerProfileController controller,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
 
-class _Header extends StatelessWidget {
-  const _Header({required this.name});
-  final String name;
-  @override
-  Widget build(BuildContext context) => Column(children: [
-        Stack(clipBehavior: Clip.none, children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/group_people.jpg',
-              width: 58,
-              height: 58,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const CircleAvatar(
-                radius: 29,
-                backgroundColor: AppColors.primaryLight,
-                child: Icon(Icons.person, color: AppColors.primary),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            farmerDeepGreen,
+            Color(0xFF1B6B36),
+            farmerGreen,
+          ],
+        ),
+
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x261B5E20),
+            blurRadius: 20,
+            offset: Offset(0, 9),
+          ),
+        ],
+      ),
+
+      child: Stack(
+        children: [
+          // Decorative circle
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 125,
+              height: 125,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(
+                  alpha: 0.06,
+                ),
+                shape: BoxShape.circle,
               ),
             ),
           ),
-          const Positioned(
-            right: -2,
-            bottom: -2,
-            child: CircleAvatar(
-              radius: 10,
-              backgroundColor: Colors.white,
-              child: CircleAvatar(
-                radius: 7,
-                backgroundColor: AppColors.success,
-                child: Icon(Icons.check, size: 10, color: Colors.white),
+
+          Positioned(
+            left: -35,
+            bottom: -45,
+            child: Container(
+              width: 125,
+              height: 125,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(
+                  alpha: 0.05,
+                ),
+                shape: BoxShape.circle,
               ),
             ),
           ),
-        ]),
-        const SizedBox(height: 5),
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-          const SizedBox(width: 3),
-          const Icon(Icons.verified, size: 13, color: AppColors.success),
-        ]),
-        const Text('Certified Organic Farmer • Battambang Coop', style: TextStyle(fontSize: 8, color: AppColors.textSecondary)),
-      ]);
+
+          // Decorative leaf
+          Positioned(
+            right: 18,
+            top: 30,
+            child: Icon(
+              Icons.eco_outlined,
+              size: 42,
+              color: Colors.white.withValues(
+                alpha: 0.08,
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 18,
+            bottom: 24,
+            child: Icon(
+              Icons.grass_rounded,
+              size: 40,
+              color: Colors.white.withValues(
+                alpha: 0.07,
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              24,
+              20,
+              22,
+            ),
+
+            child: Column(
+              children: [
+                _buildAvatar(
+                  context,
+                  controller,
+                ),
+
+                const SizedBox(height: 14),
+
+                // ==================================================
+                // NAME
+                // ==================================================
+
+                Obx(
+                  () => Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          controller.name.value
+                                  .trim()
+                                  .isEmpty
+                              ? 'Farmer'
+                              : controller.name.value,
+
+                          maxLines: 1,
+                          overflow:
+                              TextOverflow.ellipsis,
+
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 7),
+
+                      Container(
+                        width: 21,
+                        height: 21,
+
+                        decoration:
+                            const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: farmerGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                // ==================================================
+                // ROLE
+                // ==================================================
+
+                Obx(
+                  () {
+                    final role =
+                        controller.role.value.trim();
+
+                    final subtitle =
+                        role.isEmpty ||
+                                role.toLowerCase() ==
+                                    'farmer'
+                            ? 'Certified Organic Farmer'
+                            : _formatRole(role);
+
+                    return Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xD9FFFFFF),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 14),
+
+                // ==================================================
+                // LOCAL FARMER BADGE
+                // ==================================================
+
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 7,
+                  ),
+
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(
+                      alpha: 0.12,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(30),
+                    border: Border.all(
+                      color: Colors.white.withValues(
+                        alpha: 0.16,
+                      ),
+                    ),
+                  ),
+
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.eco_rounded,
+                        size: 15,
+                        color: Color(0xFFC8E6C9),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Local Farmer',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // AVATAR
+  // ==============================================================
+
+  Widget _buildAvatar(
+    BuildContext context,
+    FarmerProfileController controller,
+  ) {
+    return GestureDetector(
+      onTap: () => _showImageOptions(
+        context,
+        controller,
+      ),
+
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 104,
+            height: 104,
+
+            padding: const EdgeInsets.all(4),
+
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x35000000),
+                  blurRadius: 15,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+
+            child: Container(
+              padding: const EdgeInsets.all(2),
+
+              decoration: const BoxDecoration(
+                color: Color(0xFFB7E0BB),
+                shape: BoxShape.circle,
+              ),
+
+              child: ClipOval(
+                child: Obx(
+                  () {
+                    final image =
+                        controller.profileImage.value;
+
+                    if (image == null ||
+                        image.isEmpty) {
+                      return _avatarFallback(
+                        controller,
+                      );
+                    }
+
+                    final imageUrl =
+                        _profileImageUrl(image);
+
+                    debugPrint(
+                      'PROFILE IMAGE URL: $imageUrl',
+                    );
+
+                    return Image.network(
+                      imageUrl,
+
+                      key: ValueKey(imageUrl),
+
+                      fit: BoxFit.cover,
+
+                      loadingBuilder: (
+                        context,
+                        child,
+                        loadingProgress,
+                      ) {
+                        if (loadingProgress == null) {
+                          return child;
+                        }
+
+                        return const Center(
+                          child: SizedBox(
+                            width: 25,
+                            height: 25,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: farmerGreen,
+                            ),
+                          ),
+                        );
+                      },
+
+                      errorBuilder: (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        debugPrint(
+                          'PROFILE IMAGE ERROR: $error',
+                        );
+
+                        return _avatarFallback(
+                          controller,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // ========================================================
+          // UPLOAD LOADING
+          // ========================================================
+
+          Obx(
+            () {
+              if (!controller
+                  .isUploadingImage.value) {
+                return const SizedBox.shrink();
+              }
+
+              return Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(
+                      alpha: 0.45,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+
+                  child: const Center(
+                    child: SizedBox(
+                      width: 27,
+                      height: 27,
+                      child:
+                          CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // ========================================================
+          // EDIT BADGE
+          // ========================================================
+
+          Positioned(
+            right: 1,
+            bottom: 0,
+
+            child: Container(
+              width: 32,
+              height: 32,
+
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: farmerGreen,
+                  width: 2,
+                ),
+              ),
+
+              child: const Icon(
+                Icons.edit_rounded,
+                size: 15,
+                color: farmerGreen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // STATS
+  // ==============================================================
+
+  Widget _buildStats() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 18,
+      ),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+
+        border: Border.all(
+          color: const Color(0xFFDCEBDD),
+        ),
+
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+
+      child: Row(
+        children: [
+          const Expanded(
+            child: _StatItem(
+              icon: Icons.inventory_2_outlined,
+              value: '24',
+              label: 'Products',
+            ),
+          ),
+
+          _verticalDivider(),
+
+          const Expanded(
+            child: _StatItem(
+              icon: Icons.receipt_long_outlined,
+              value: '156',
+              label: 'Orders',
+            ),
+          ),
+
+          _verticalDivider(),
+
+          const Expanded(
+            child: _StatItem(
+              icon: Icons.star_outline_rounded,
+              value: '4.8',
+              label: 'Rating',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _verticalDivider() {
+    return Container(
+      width: 1,
+      height: 48,
+      color: const Color(0xFFDCE7DD),
+    );
+  }
+
+  // ==============================================================
+  // SECTION HEADER
+  // ==============================================================
+
+  Widget _buildSectionHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 39,
+          height: 39,
+
+          decoration: BoxDecoration(
+            color: farmerLightGreen,
+            borderRadius:
+                BorderRadius.circular(12),
+          ),
+
+          child: const Icon(
+            Icons.tune_rounded,
+            size: 20,
+            color: farmerGreen,
+          ),
+        ),
+
+        const SizedBox(width: 11),
+
+        const Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Account & Settings',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: farmerDeepGreen,
+              ),
+            ),
+
+            SizedBox(height: 2),
+
+            Text(
+              'Manage your farmer account',
+              style: TextStyle(
+                fontSize: 11,
+                color: farmerTextGrey,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ==============================================================
+  // SETTINGS
+  // ==============================================================
+
+  Widget _buildSettings(
+    FarmerProfileController controller,
+  ) {
+    return Column(
+      children: [
+        _ProfileMenuItem(
+          icon: Icons.person_outline_rounded,
+          title: 'Edit Profile Info',
+          subtitle:
+              'Update your personal information',
+          onTap: () =>
+              _openEditProfile(controller),
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon: Icons.eco_outlined,
+          title: 'My Farm Details',
+          subtitle:
+              'Manage your farm information',
+          onTap: _openMyFarm,
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon:
+              Icons.account_balance_wallet_outlined,
+          title: 'Payment & ABA Settings',
+          subtitle:
+              'Manage your payment information',
+          onTap: () {
+            Get.snackbar(
+              'Payment & ABA',
+              'Payment settings will be available here.',
+              snackPosition:
+                  SnackPosition.BOTTOM,
+            );
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon:
+              Icons.notifications_none_rounded,
+          title: 'Notification Preferences',
+          subtitle:
+              'Control your app notifications',
+          onTap: () {
+            Get.snackbar(
+              'Notifications',
+              'Notification preferences will be available here.',
+              snackPosition:
+                  SnackPosition.BOTTOM,
+            );
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon: Icons.language_rounded,
+          title: 'Language (ភាសាខ្មែរ)',
+          subtitle:
+              'Choose your preferred language',
+          onTap: () {
+            Get.snackbar(
+              'Language',
+              'Language settings will be available here.',
+              snackPosition:
+                  SnackPosition.BOTTOM,
+            );
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon: Icons.help_outline_rounded,
+          title: 'Help & Customer Support',
+          subtitle:
+              'Get help with Phum Kasikor',
+          onTap: () {
+            Get.snackbar(
+              'Help & Support',
+              'Customer support will be available here.',
+              snackPosition:
+                  SnackPosition.BOTTOM,
+            );
+          },
+        ),
+
+        const SizedBox(height: 10),
+
+        _ProfileMenuItem(
+          icon: Icons.description_outlined,
+          title: 'Terms & Privacy Policy',
+          subtitle:
+              'Review our policies',
+          onTap: () {
+            Get.snackbar(
+              'Terms & Privacy',
+              'Terms and privacy information will be available here.',
+              snackPosition:
+                  SnackPosition.BOTTOM,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ==============================================================
+  // LOGOUT
+  // ==============================================================
+
+  Widget _buildLogout() {
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF7F7),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: const Color(0xFFF3D4D4),
+      ),
+    ),
+    child: SizedBox(
+      width: double.infinity,
+      height: 49,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Get.defaultDialog(
+            title: 'Log Out',
+            titleStyle: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: farmerDeepGreen,
+            ),
+            middleText: 'Are you sure you want to log out?',
+            middleTextStyle: const TextStyle(
+              color: farmerTextGrey,
+            ),
+            textCancel: 'Cancel',
+            textConfirm: 'Log Out',
+            confirmTextColor: Colors.white,
+            cancelTextColor: farmerGreen,
+            buttonColor: Colors.red,
+            onConfirm: () {
+              Get.back();
+
+              Get.offAll(
+                () => const WelcomeScreen(),
+              );
+            },
+          );
+        },
+        icon: const Icon(
+          Icons.logout_rounded,
+          size: 18,
+          color: Colors.red,
+        ),
+        label: const Text(
+          'Log Out Account',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: Colors.red,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFF1F1),
+          side: const BorderSide(
+            color: Color(0xFFE57373),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(13),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
-class _Stats extends StatelessWidget {
-  const _Stats({required this.products, required this.orders, required this.rating});
-  final int products;
-  final int orders;
-  final double rating;
-  @override
-  Widget build(BuildContext context) => Container(
-        height: 54,
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
-        child: Row(children: [
-          _Stat(value: '$products', label: 'PRODUCTS'),
-          const VerticalDivider(indent: 10, endIndent: 10, color: AppColors.border),
-          _Stat(value: '$orders', label: 'ORDERS'),
-          const VerticalDivider(indent: 10, endIndent: 10, color: AppColors.border),
-          _Stat(value: '${rating.toStringAsFixed(1)} ★', label: 'RATING'),
-        ]),
+  // ==============================================================
+  // PROFILE IMAGE URL
+  // ==============================================================
+
+  String _profileImageUrl(String image) {
+    final value = image.trim();
+
+    if (value.isEmpty) {
+      return '';
+    }
+
+    if (value.startsWith(
+      'http://localhost:8000',
+    )) {
+      return value.replaceFirst(
+        'http://localhost:8000',
+        'http://10.0.2.2:8000',
       );
+    }
+
+    if (value.startsWith(
+      'http://127.0.0.1:8000',
+    )) {
+      return value.replaceFirst(
+        'http://127.0.0.1:8000',
+        'http://10.0.2.2:8000',
+      );
+    }
+
+    if (value.startsWith('http://') ||
+        value.startsWith('https://')) {
+      return value;
+    }
+
+    final baseUri =
+        Uri.parse(ApiConstants.baseUrl);
+
+    final origin = Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort
+          ? baseUri.port
+          : null,
+    );
+
+    final cleanPath =
+        value.startsWith('/')
+            ? value
+            : '/$value';
+
+    return '${origin.toString()}$cleanPath';
+  }
+
+  // ==============================================================
+  // AVATAR FALLBACK
+  // ==============================================================
+
+  Widget _avatarFallback(
+    FarmerProfileController controller,
+  ) {
+    final value =
+        controller.name.value.trim();
+
+    final letter = value.isEmpty
+        ? 'F'
+        : value[0].toUpperCase();
+
+    return Container(
+      color: farmerLightGreen,
+
+      alignment: Alignment.center,
+
+      child: Text(
+        letter,
+        style: const TextStyle(
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
+          color: farmerDeepGreen,
+        ),
+      ),
+    );
+  }
+
+  // ==============================================================
+  // IMAGE OPTIONS
+  // ==============================================================
+
+  void _showImageOptions(
+    BuildContext context,
+    FarmerProfileController controller,
+  ) {
+    if (controller.isUploadingImage.value) {
+      return;
+    }
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            10,
+            20,
+            24,
+          ),
+
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+
+                margin: const EdgeInsets.only(
+                  bottom: 20,
+                ),
+
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB9D4BB),
+                  borderRadius:
+                      BorderRadius.circular(10),
+                ),
+              ),
+
+              const Text(
+                'Profile photo',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: farmerDeepGreen,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              const Text(
+                'Choose how you want to update your photo.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: farmerTextGrey,
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Camera
+              _ImageOption(
+                icon: Icons.camera_alt_rounded,
+                title: 'Take a photo',
+                subtitle: 'Use your camera',
+
+                onTap: () async {
+                  Get.back();
+
+                  final result =
+                      await Get.to<bool>(
+                    () => const FarmerCameraScreen(),
+                  );
+
+                  if (result == true) {
+                    await controller
+                        .refreshProfile();
+
+                    if (Get.isSnackbarOpen) {
+                      Get.closeCurrentSnackbar();
+                    }
+
+                    Get.snackbar(
+                      'Profile Photo',
+                      'Your camera photo is now your profile photo.',
+                      snackPosition:
+                          SnackPosition.BOTTOM,
+                      margin:
+                          const EdgeInsets.all(16),
+                    );
+                  }
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              // Gallery
+              _ImageOption(
+                icon:
+                    Icons.photo_library_rounded,
+                title: 'Choose from gallery',
+                subtitle:
+                    'Select an existing photo',
+
+                onTap: () async {
+                  Get.back();
+
+                  await controller
+                      .pickProfileImage(
+                    ImageSource.gallery,
+                  );
+
+                  await controller
+                      .refreshProfile();
+                },
+              ),
+
+              // Remove
+              Obx(
+                () {
+                  final hasImage =
+                      controller.profileImage.value !=
+                              null &&
+                          controller.profileImage
+                              .value!
+                              .isNotEmpty;
+
+                  if (!hasImage) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    children: [
+                      const SizedBox(height: 10),
+
+                      _ImageOption(
+                        icon:
+                            Icons.delete_outline_rounded,
+                        title: 'Remove photo',
+                        subtitle:
+                            'Use your default profile image',
+                        iconColor: Colors.red,
+
+                        onTap: () {
+                          Get.back();
+
+                          _removePhoto(
+                            controller,
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Future<void> _removePhoto(
+    FarmerProfileController controller,
+  ) async {
+    Get.snackbar(
+      'Profile Photo',
+      'Remove photo will be connected to the Laravel delete endpoint next.',
+      snackPosition:
+          SnackPosition.BOTTOM,
+    );
+  }
+
+  // ==============================================================
+  // NAVIGATION
+  // ==============================================================
+
+  Future<void> _openEditProfile(
+    FarmerProfileController controller,
+  ) async {
+    final result = await Get.toNamed(
+      AppRoutes.farmerEditProfile,
+    );
+
+    if (result == true) {
+      await controller.refreshProfile();
+    }
+  }
+
+  Future<void> _openMyFarm() async {
+    await Get.toNamed(
+      AppRoutes.farmerFarmProfile,
+    );
+  }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
+// ================================================================
+// ROLE FORMATTER
+// ================================================================
+
+String _formatRole(String role) {
+  if (role.isEmpty) {
+    return 'Certified Organic Farmer';
+  }
+
+  return role[0].toUpperCase() +
+      role.substring(1);
+}
+
+// ================================================================
+// STAT ITEM
+// ================================================================
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
   final String value;
   final String label;
+
   @override
-  Widget build(BuildContext context) => Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(value, style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w800)),
-        Text(label, style: const TextStyle(fontSize: 7, color: AppColors.textSecondary)),
-      ]));
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+
+          decoration: const BoxDecoration(
+            color: farmerLightGreen,
+            shape: BoxShape.circle,
+          ),
+
+          child: Icon(
+            icon,
+            size: 17,
+            color: farmerGreen,
+          ),
+        ),
+
+        const SizedBox(height: 7),
+
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: farmerDeepGreen,
+          ),
+        ),
+
+        const SizedBox(height: 2),
+
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: farmerTextGrey,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _FarmHelpCard extends StatelessWidget {
-  const _FarmHelpCard({required this.onTap});
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9), border: Border.all(color: AppColors.border)),
-        child: Row(children: [
-          const CircleAvatar(radius: 11, backgroundColor: AppColors.primaryLight, child: Icon(Icons.auto_awesome, size: 13, color: AppColors.success)),
-          const SizedBox(width: 9),
-          const Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Need help with your farm?', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800)),
-            Text('Ask Phum Kasikor AI for farming...', style: TextStyle(fontSize: 7, color: AppColors.textSecondary)),
-          ])),
-          SizedBox(height: 23, child: ElevatedButton(onPressed: onTap, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 10)), child: const Text('Ask AI', style: TextStyle(fontSize: 8)))),
-        ]),
-      );
-}
+// ================================================================
+// PROFILE MENU ITEM
+// ================================================================
 
-class _SettingTile extends StatelessWidget {
-  const _SettingTile({required this.icon, required this.title, required this.subtitle, required this.onTap, this.trailing, this.trailingText});
+class _ProfileMenuItem extends StatelessWidget {
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final Widget? trailing;
-  final String? trailingText;
+
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 7),
-        child: Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(9),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(9),
-            child: Container(
-              height: 47,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(9)),
-              child: Row(children: [
-                CircleAvatar(radius: 10, backgroundColor: AppColors.primaryLight, child: Icon(icon, size: 13, color: AppColors.success)),
-                const SizedBox(width: 9),
-                Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800)),
-                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 7, color: AppColors.textSecondary)),
-                ])),
-                // ignore: use_null_aware_elements
-                if (trailing != null) trailing!,
-                if (trailingText != null) Text(trailingText!, style: const TextStyle(fontSize: 7, color: AppColors.primary, fontWeight: FontWeight.w700)),
-                const SizedBox(width: 2),
-                const Icon(Icons.chevron_right_rounded, size: 17, color: Color(0xFF91AAB5)),
-              ]),
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(17),
+
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
+
+        splashColor: farmerLightGreen,
+        highlightColor: farmerSoftGreen,
+
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 13,
+            vertical: 11,
+          ),
+
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+                BorderRadius.circular(17),
+
+            border: Border.all(
+              color: const Color(0xFFDCEBDD),
             ),
+
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x09000000),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+
+          child: Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+
+                decoration: BoxDecoration(
+                  gradient:
+                      const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFEAF7EA),
+                      Color(0xFFDDF0DE),
+                    ],
+                  ),
+
+                  borderRadius:
+                      BorderRadius.circular(14),
+                ),
+
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: farmerGreen,
+                ),
+              ),
+
+              const SizedBox(width: 13),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: farmerTextDark,
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow:
+                          TextOverflow.ellipsis,
+
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: farmerTextGrey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Container(
+                width: 29,
+                height: 29,
+
+                decoration:
+                    const BoxDecoration(
+                  color: farmerSoftGreen,
+                  shape: BoxShape.circle,
+                ),
+
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 19,
+                  color: farmerGreen,
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
-class _ConnectedBadge extends StatelessWidget {
-  const _ConnectedBadge();
+// ================================================================
+// IMAGE OPTION
+// ================================================================
+
+class _ImageOption extends StatelessWidget {
+  const _ImageOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color? iconColor;
+
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-        decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(3)),
-        child: const Text('ABA\nConnected', textAlign: TextAlign.center, style: TextStyle(fontSize: 6, color: AppColors.primary, fontWeight: FontWeight.w700)),
-      );
+  Widget build(BuildContext context) {
+    final isDanger = iconColor != null;
+
+    return Material(
+      color: isDanger
+          ? const Color(0xFFFFF5F5)
+          : const Color(0xFFF1F8F1),
+
+      borderRadius: BorderRadius.circular(17),
+
+      child: InkWell(
+        onTap: onTap,
+        borderRadius:
+            BorderRadius.circular(17),
+
+        child: Padding(
+          padding: const EdgeInsets.all(13),
+
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+
+                decoration: BoxDecoration(
+                  color: isDanger
+                      ? const Color(0xFFFFE8E8)
+                      : const Color(0xFFDFF0E0),
+
+                  borderRadius:
+                      BorderRadius.circular(14),
+                ),
+
+                child: Icon(
+                  icon,
+                  color:
+                      iconColor ?? farmerGreen,
+                ),
+              ),
+
+              const SizedBox(width: 13),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      title,
+
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDanger
+                            ? Colors.red.shade700
+                            : farmerDeepGreen,
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      subtitle,
+
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: farmerTextGrey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDanger
+                    ? Colors.red.shade300
+                    : farmerGreen,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

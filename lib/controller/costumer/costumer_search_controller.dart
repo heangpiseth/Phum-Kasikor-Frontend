@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/model/customer/costumer_product_model.dart';
-import 'package:phum_kasikors/repositories/costumer/data_service.dart';
+import 'package:phum_kasikors/repositories/costumer/customer_product_repository.dart';
 
-
-// Named SearchFilterController (not SearchController) to avoid clashing
-// with Flutter Material's own SearchController class.
 class SearchFilterController extends GetxController {
-  final _dataService = MockDataService.to;
+  final repository = Get.find<CustomerProductRepository>();
 
   final queryText = ''.obs;
   final isOrganicOnly = false.obs;
   final isVegetablesOnly = false.obs;
-  final categoryFilter = Rxn<ProductCategory>();
+  final categoryFilter = Rxn<String>();
   final priceMax = 50.0.obs;
   final priceMin = 0.0.obs;
 
-  late final RxList<ProductModel> results = <ProductModel>[].obs;
+  final RxList<ProductModel> results = <ProductModel>[].obs;
+
+  final RxBool isLoading = false.obs;
+  final RxString errorMessage = ''.obs;
 
   final searchField = TextEditingController();
 
@@ -24,11 +25,28 @@ class SearchFilterController extends GetxController {
   void onInit() {
     super.onInit();
     final arg = Get.arguments;
-    if (arg is ProductCategory) {
+    if (arg is String) {
       categoryFilter.value = arg;
-      isVegetablesOnly.value = arg == ProductCategory.vegetables;
+      isVegetablesOnly.value = arg == 'vegetables';
     }
     searchField.text = queryText.value;
+
+    ever(repository.products, (_) => _maybeRunSearch());
+    ever(repository.isLoading, (_) => _maybeRunSearch());
+    ever(repository.errorMessage, (_) => _maybeRunSearch());
+
+    _maybeRunSearch();
+  }
+
+  void _maybeRunSearch() {
+    if (repository.isLoading.value ||
+        repository.errorMessage.value.isNotEmpty) {
+      isLoading.value = repository.isLoading.value;
+      errorMessage.value = repository.errorMessage.value;
+      return;
+    }
+    isLoading.value = false;
+    errorMessage.value = '';
     runSearch();
   }
 
@@ -38,19 +56,44 @@ class SearchFilterController extends GetxController {
     super.onClose();
   }
 
-  void runSearch() {
-    var list = _dataService.search(queryText.value);
-    final category = categoryFilter.value;
-    if (category != null) {
-      list = list.where((p) => p.category == category).toList();
-    }
-    list = list.where((p) => p.price <= priceMax.value && p.price >= priceMin.value).toList();
-    if (isOrganicOnly.value) {
+  Future<void> runSearch() async {
+    isLoading.value = true;
+    errorMessage.value = '';
+
+    try {
+      final query = queryText.value;
+      var list = query.isEmpty
+          ? List<ProductModel>.from(repository.products)
+          : await repository.searchProducts(query);
+
+      final category = categoryFilter.value;
+      if (category != null) {
+        list = list.where((p) {
+          final catName = p.category?.name.toLowerCase() ?? '';
+          return catName == category.toLowerCase();
+        }).toList();
+      }
+
       list = list
-          .where((p) => p.method.toLowerCase().contains('organic'))
+          .where((p) => p.price <= priceMax.value && p.price >= priceMin.value)
           .toList();
+
+      if (isOrganicOnly.value) {
+        list = list
+            .where(
+              (p) => (p.farm?.farmingMethod ?? '').toLowerCase().contains(
+                'organic',
+              ),
+            )
+            .toList();
+      }
+
+      results.assignAll(list);
+    } catch (error) {
+      errorMessage.value = error.toString();
+    } finally {
+      isLoading.value = false;
     }
-    results.assignAll(list);
   }
 
   void clearFilters() {
@@ -70,10 +113,10 @@ class SearchFilterController extends GetxController {
 
   void setVegetablesOnly(bool enabled) {
     isVegetablesOnly.value = enabled;
-    categoryFilter.value = enabled ? ProductCategory.vegetables : null;
+    categoryFilter.value = enabled ? 'vegetables' : null;
     runSearch();
   }
 
   void openProduct(ProductModel product) =>
-      Get.toNamed('/costumer/product-detailscreen', arguments: product);
+      Get.toNamed(AppRoutes.costumerProductDetailscreen, arguments: product);
 }

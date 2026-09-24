@@ -15,6 +15,8 @@ class ApiConstants {
 
   // Customer
   static const String customerProducts = '/customer/products';
+  static const String customerProductCategories =
+      '/customer/products/categories';
   static const String customerCart = '/customer/cart';
   static const String customerOrders = '/customer/orders';
 

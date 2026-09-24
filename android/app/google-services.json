@@ -41,6 +41,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392917185692:android:341da341ed9b6a62e16959",
+        "android_client_info": {
+          "package_name": "com.example.phum_kasikors"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "392917185692-1olantat1oah94rnq10cjjt80vk4f3qm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7KASpgsEK1oI-HiqlClVSre4wBxV2M-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "392917185692-1olantat1oah94rnq10cjjt80vk4f3qm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

@@ -91,6 +91,12 @@ class SearchView extends GetView<SearchFilterController> {
             const SizedBox(height: 8),
             Expanded(
               child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.errorMessage.value.isNotEmpty) {
+                  return Center(child: Text(controller.errorMessage.value));
+                }
                 if (controller.results.isEmpty) {
                   return const Center(child: Text('No products found'));
                 }
@@ -107,26 +113,26 @@ class SearchView extends GetView<SearchFilterController> {
                       elevation: 0,
                       child: ListTile(
                         onTap: () => controller.openProduct(p),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            p.imageUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Container(
-                              width: 56,
-                              height: 56,
-                              color: AppColors.divider,
-                              child: const Icon(Icons.image_not_supported),
-                            ),
-                          ),
-                        ),
+                         leading: ClipRRect(
+                           borderRadius: BorderRadius.circular(8),
+                           child: Image.network(
+                             p.imageUrl,
+                             width: 56,
+                             height: 56,
+                             fit: BoxFit.cover,
+                             errorBuilder: (_, _, _) => Container(
+                               width: 56,
+                               height: 56,
+                               color: AppColors.divider,
+                               child: const Icon(Icons.image_not_supported),
+                             ),
+                           ),
+                         ),
                         title: Text(
                           p.name,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        subtitle: Text('${p.priceLabel} • ${p.farmName}'),
+                        subtitle: Text('${p.price} • ${p.name}'),
                         trailing: IconButton(
                           icon: const Icon(
                             Icons.add_circle,

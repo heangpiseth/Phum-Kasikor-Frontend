@@ -3,29 +3,46 @@ import 'package:get/get.dart';
 import 'package:phum_kasikors/controller/costumer/costumer_cart_controller.dart';
 import 'package:phum_kasikors/core/routes/app_routes.dart';
 import 'package:phum_kasikors/model/customer/costumer_order_model.dart';
+import 'package:phum_kasikors/core/service/customer/customer_checkout_service.dart';
 
 class CheckoutController extends GetxController {
   late final CartController cart = Get.find<CartController>();
 
+  final CustomerCheckoutService _service = CustomerCheckoutService();
+
   final deliveryAddress =
-      'Channa Sok\nNo. 124, St. 51, Sangkat Boeung Keng Kang I,\n'
+      'Channa Sok\nNo. 124, St. 51, Sangkat Boeung Keng Keng I,\n'
       'Khan Chamkarmon, Phnom Penh 12302'.obs;
 
   final deliveryMethod = DeliveryMethod.standard.obs;
-  final selectedPayment = Rxn<PaymentMethod>(PaymentMethod.abaBank);
+
+  final selectedPayment =
+      Rxn<PaymentMethod>(PaymentMethod.abaBank);
+
   final orderNote = ''.obs;
 
+  final isPlacingOrder = false.obs;
+
   static const double expressFee = 3.0;
-  static const double standardFee = 0.0; // UI says "2-3 Days • Free"
+  static const double standardFee = 0.0;
 
-  double get deliveryFee =>
-      deliveryMethod.value == DeliveryMethod.express ? expressFee : standardFee;
+  double get deliveryFee {
+    return deliveryMethod.value == DeliveryMethod.express
+        ? expressFee
+        : standardFee;
+  }
 
-  double get total => cart.subtotal + deliveryFee;
+  double get total {
+    return cart.subtotal + deliveryFee;
+  }
 
-  void setDeliveryMethod(DeliveryMethod method) => deliveryMethod.value = method;
+  void setDeliveryMethod(DeliveryMethod method) {
+    deliveryMethod.value = method;
+  }
 
-  void selectPayment(PaymentMethod method) => selectedPayment.value = method;
+  void selectPayment(PaymentMethod method) {
+    selectedPayment.value = method;
+  }
 
   void editAddress() {
     Get.snackbar(
@@ -35,7 +52,11 @@ class CheckoutController extends GetxController {
     );
   }
 
-  void placeOrder() {
+  Future<void> placeOrder() async {
+    if (isPlacingOrder.value) {
+      return;
+    }
+
     if (cart.itemCount == 0) {
       Get.snackbar(
         'Cart is Empty',
@@ -55,6 +76,7 @@ class CheckoutController extends GetxController {
     }
 
     final payment = selectedPayment.value;
+
     if (payment == null) {
       Get.snackbar(
         'Payment Method',
@@ -64,22 +86,51 @@ class CheckoutController extends GetxController {
       return;
     }
 
-    final order = OrderModel(
-      id: 'ORD-${DateTime.now().millisecondsSinceEpoch}',
-      date: DateTime.now(),
-      items: cart.items.map(OrderItem.fromCartItem).toList(),
-      deliveryAddress: deliveryAddress.value,
-      deliveryMethod: deliveryMethod.value,
-      paymentMethod: payment,
-      deliveryFee: deliveryFee,
-      farmName: cart.items.isNotEmpty ? cart.items.first.product.farmName : '',
-      farmerName: 'Sokha Vann',
-      farmerPhone: '+855 12 345 678',
-      note: orderNote.value,
-    );
+    isPlacingOrder.value = true;
 
-    // Payment screen owns the countdown, cart clearing and the
-    // hand-off to Order Success.
-    Get.toNamed(AppRoutes.costumerPaymentscreen, arguments: order);
+    try {
+      final response = await _service.createOrder(
+        items: cart.items
+            .map(OrderItem.fromCartItem)
+            .toList(),
+        deliveryAddress: deliveryAddress.value,
+        deliveryMethod: deliveryMethod.value,
+        paymentMethod: payment,
+        deliveryFee: deliveryFee,
+        note: orderNote.value,
+      );
+
+      final OrderModel order = response.order;
+
+      // The Laravel API has successfully created the order.
+      // Clear the local cart now.
+      cart.clearCart();
+
+      Get.offAllNamed(
+        AppRoutes.costumerOrderSuccessscreen,
+        arguments: order,
+      );
+    } catch (e) {
+      final message = _cleanErrorMessage(e);
+
+      Get.snackbar(
+        'Order Failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 5),
+      );
+    } finally {
+      isPlacingOrder.value = false;
+    }
+  }
+
+  String _cleanErrorMessage(Object error) {
+    final text = error.toString();
+
+    if (text.startsWith('Exception: ')) {
+      return text.substring('Exception: '.length);
+    }
+
+    return text;
   }
 }

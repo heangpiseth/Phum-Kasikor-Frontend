@@ -7,7 +7,7 @@ import 'package:phum_kasikors/controller/costumer/navigation/costumer_nav_contro
 import 'package:phum_kasikors/view/costumer/cart/costumer_cart_screen.dart';
 import 'package:phum_kasikors/view/costumer/costumer_home_screen.dart';
 import 'package:phum_kasikors/view/costumer/marketplace/costumer_explore_view.dart';
-import 'package:phum_kasikors/view/costumer/orders/costumer_order_list_screen.dart';
+import 'package:phum_kasikors/view/costumer/orders/costumer_orders_screen.dart';
 import 'package:phum_kasikors/view/costumer/profile/costumer_profile_screen.dart';
 import 'package:phum_kasikors/widgets/ai_assistant/ai_assistant_floating_button.dart';
 
@@ -18,7 +18,7 @@ class MainNavView extends GetView<NavController> {
   final List<Widget> _pages = [
     CostumerHomeScreen(),
     const ExploreView(),
-    const OrdersListView(),
+    const CustomerOrdersScreen(),
     const CustomerCartScreen(),
     const CostumerProfileScreen(),
   ];
@@ -34,7 +34,11 @@ class MainNavView extends GetView<NavController> {
           children: _pages,
         ),
       ),
-      floatingActionButton: const AiAssistantFloatingButton(isFarmer: false),
+      floatingActionButton: Obx(
+        () => controller.currentIndex.value == 3
+            ? const SizedBox.shrink()
+            : const AiAssistantFloatingButton(isFarmer: false)
+      ),
       bottomNavigationBar: Obx(
         () => BottomNavigationBar(
           type: BottomNavigationBarType.fixed,

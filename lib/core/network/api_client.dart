@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:phum_kasikors/core/constants/app_constants.dart';
@@ -17,7 +18,6 @@ class ApiClient {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-
       if (token != null && token.isNotEmpty)
         'Authorization': 'Bearer $token',
     };
@@ -81,6 +81,73 @@ class ApiClient {
         0,
         'Unable to connect to the server. '
         'Please check Laravel is running.',
+      );
+    }
+  }
+
+  // ============================================================
+  // MULTIPART POST
+  // ============================================================
+
+  static Future<dynamic> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    required Map<String, String> files,
+  }) async {
+    try {
+      final url = Uri.parse(
+        '${ApiConstants.baseUrl}/$path',
+      );
+
+      final request = http.MultipartRequest(
+        'POST',
+        url,
+      );
+
+      final token = await TokenStorage.getToken();
+
+      request.headers.addAll({
+        'Accept': 'application/json',
+        if (token != null && token.isNotEmpty)
+          'Authorization': 'Bearer $token',
+      });
+
+      request.fields.addAll(fields);
+
+      for (final entry in files.entries) {
+        final file = File(entry.value);
+
+        if (!await file.exists()) {
+          throw ApiException(
+            0,
+            'File not found: ${entry.value}',
+          );
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            entry.key,
+            entry.value,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+
+      throw ApiException(
+        0,
+        'Unable to upload the files. '
+        'Please check your internet connection and make sure Laravel is running.',
       );
     }
   }
@@ -204,35 +271,15 @@ class ApiClient {
     if (decoded is Map) {
       final data = Map<String, dynamic>.from(decoded);
 
-      // Laravel:
-      // {
-      //   "message": "Unauthenticated."
-      // }
-
       if (data['message'] != null) {
         message = data['message'].toString();
       }
-
-      // Laravel validation:
-      //
-      // {
-      //   "message": "The given data was invalid.",
-      //   "errors": {
-      //      "phone": [
-      //         "The phone field is required."
-      //      ]
-      //   }
-      // }
 
       if (data['errors'] is Map) {
         errors = Map<String, dynamic>.from(
           data['errors'] as Map,
         );
       }
-
-      // --------------------------------------------------------
-      // If message missing, use first validation error
-      // --------------------------------------------------------
 
       if ((data['message'] == null ||
               data['message'].toString().isEmpty) &&
@@ -248,10 +295,6 @@ class ApiClient {
         }
       }
 
-      // --------------------------------------------------------
-      // Some APIs return "error"
-      // --------------------------------------------------------
-
       if ((data['message'] == null ||
               data['message'].toString().isEmpty) &&
           data['error'] != null) {
@@ -260,7 +303,7 @@ class ApiClient {
     }
 
     // ----------------------------------------------------------
-    // Throw ApiException
+    // THROW API EXCEPTION
     // ----------------------------------------------------------
 
     throw ApiException(

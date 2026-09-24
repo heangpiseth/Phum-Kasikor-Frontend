@@ -1,10 +1,8 @@
-// farm_card.dart
 import 'package:flutter/material.dart';
 import 'package:phum_kasikors/color/color.dart';
-import 'package:phum_kasikors/model/customer/costumer_home_model.dart';
+import 'package:phum_kasikors/model/customer/costumer_farm_model.dart';
 import 'package:phum_kasikors/widgets/costumer/rating_stars.dart';
 
-/// Horizontal image card used in "Featured Farms" and "Near You" lists.
 class FarmCard extends StatelessWidget {
   final FarmModel farm;
   final VoidCallback? onTap;
@@ -40,7 +38,10 @@ class FarmCard extends StatelessWidget {
               farm.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 2),
             Row(
@@ -50,7 +51,10 @@ class FarmCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${farm.distanceKm}km',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

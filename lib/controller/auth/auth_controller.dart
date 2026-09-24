@@ -43,8 +43,7 @@ class AuthController extends GetxController {
   // LOCATION
   // ============================================================
 
-  final provinceController =
-      TextEditingController(text: 'Phnom Penh');
+  final provinceController = TextEditingController();
 
   final districtController = TextEditingController();
   final communeController = TextEditingController();
@@ -53,8 +52,7 @@ class AuthController extends GetxController {
   // OTP
   // ============================================================
 
-  final otpControllers =
-      List.generate(6, (_) => TextEditingController());
+  final otpControllers = List.generate(6, (_) => TextEditingController());
 
   // ============================================================
   // STATE
@@ -89,8 +87,7 @@ class AuthController extends GetxController {
   // ============================================================
 
   String get phone {
-    final signupPhone =
-        signUpPhoneController.text.trim();
+    final signupPhone = signUpPhoneController.text.trim();
 
     if (signupPhone.isNotEmpty) {
       return signupPhone;
@@ -100,10 +97,11 @@ class AuthController extends GetxController {
   }
 
   String get otp {
-    return otpControllers
-        .map((controller) => controller.text.trim())
-        .join();
+    return otpControllers.map((controller) => controller.text.trim()).join();
   }
+
+  final latitude = Rxn<double>();
+  final longitude = Rxn<double>();
 
   // ============================================================
   // INIT
@@ -124,9 +122,7 @@ class AuthController extends GetxController {
   // ============================================================
 
   bool _validPhone(String value) {
-    final digits = value
-        .trim()
-        .replaceAll(RegExp(r'[^0-9]'), '');
+    final digits = value.trim().replaceAll(RegExp(r'[^0-9]'), '');
 
     return digits.length >= 8;
   }
@@ -156,34 +152,26 @@ class AuthController extends GetxController {
     debugPrint('>>> beginLogin() called');
     debugPrint('========================================');
 
-    final identifier =
-        loginPhoneController.text.trim();
+    final identifier = loginPhoneController.text.trim();
 
-    final password =
-        loginPasswordController.text;
+    final password = loginPasswordController.text;
 
     // ----------------------------------------------------------
     // VALIDATION
     // ----------------------------------------------------------
 
     if (identifier.isEmpty) {
-      _showError(
-        'Please enter your phone number or email.',
-      );
+      _showError('Please enter your phone number or email.');
       return;
     }
 
     if (password.isEmpty) {
-      _showError(
-        'Please enter your password.',
-      );
+      _showError('Please enter your password.');
       return;
     }
 
     if (password.length < 8) {
-      _showError(
-        'Your password must be at least 8 characters.',
-      );
+      _showError('Your password must be at least 8 characters.');
       return;
     }
 
@@ -197,25 +185,18 @@ class AuthController extends GetxController {
       // CALL LARAVEL
       // --------------------------------------------------------
 
-      final response = await ApiClient.post(
-        'auth/login',
-        {
-          'identifier': identifier,
-          'password': password,
-        },
-      );
+      final response = await ApiClient.post('auth/login', {
+        'identifier': identifier,
+        'password': password,
+      });
 
       debugPrint('>>> Login response: $response');
 
       if (response is! Map) {
-        throw ApiException(
-          500,
-          'Invalid login response from server.',
-        );
+        throw ApiException(500, 'Invalid login response from server.');
       }
 
-      final json =
-          Map<String, dynamic>.from(response);
+      final json = Map<String, dynamic>.from(response);
 
       // --------------------------------------------------------
       // TOKEN
@@ -223,17 +204,14 @@ class AuthController extends GetxController {
 
       final token = json['token'];
 
-      if (token == null ||
-          token.toString().isEmpty) {
+      if (token == null || token.toString().isEmpty) {
         throw ApiException(
           500,
           'Login did not return an authentication token.',
         );
       }
 
-      await TokenStorage.saveToken(
-        token.toString(),
-      );
+      await TokenStorage.saveToken(token.toString());
 
       debugPrint('>>> Login token saved');
 
@@ -244,31 +222,20 @@ class AuthController extends GetxController {
       final userJson = json['user'];
 
       if (userJson is! Map) {
-        throw ApiException(
-          500,
-          'Login returned invalid user data.',
-        );
+        throw ApiException(500, 'Login returned invalid user data.');
       }
 
-      final user = UserModel.fromJson(
-        Map<String, dynamic>.from(userJson),
-      );
+      final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
 
-      debugPrint(
-        '>>> Logged in user: ${user.name}',
-      );
+      debugPrint('>>> Logged in user: ${user.name}');
 
-      debugPrint(
-        '>>> User role: ${user.role.name}',
-      );
+      debugPrint('>>> User role: ${user.role.name}');
 
       // --------------------------------------------------------
       // SAVE ROLE
       // --------------------------------------------------------
 
-      await TokenStorage.saveRole(
-        user.role.name,
-      );
+      await TokenStorage.saveRole(user.role.name);
 
       // --------------------------------------------------------
       // FINISH LOADING
@@ -284,25 +251,17 @@ class AuthController extends GetxController {
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Login API error: ${e.message}',
-      );
+      debugPrint('>>> Login API error: ${e.message}');
 
       _showError(e.message);
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Login unexpected error: $e',
-      );
+      debugPrint('>>> Login unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Login failed. Please try again.',
-      );
+      _showError('Login failed. Please try again.');
     }
   }
 
@@ -315,47 +274,35 @@ class AuthController extends GetxController {
     debugPrint('>>> beginSignUp() called');
     debugPrint('========================================');
 
-    final name =
-        signUpNameController.text.trim();
+    final name = signUpNameController.text.trim();
 
-    final phone =
-        signUpPhoneController.text.trim();
+    final phone = signUpPhoneController.text.trim();
 
-    final email =
-        signUpEmailController.text.trim();
+    final email = signUpEmailController.text.trim();
 
-    final password =
-        signUpPasswordController.text;
+    final password = signUpPasswordController.text;
 
     // ----------------------------------------------------------
     // VALIDATION
     // ----------------------------------------------------------
 
     if (name.isEmpty) {
-      _showError(
-        'Please enter your full name.',
-      );
+      _showError('Please enter your full name.');
       return;
     }
 
     if (!_validPhone(phone)) {
-      _showError(
-        'Please enter a valid phone number.',
-      );
+      _showError('Please enter a valid phone number.');
       return;
     }
 
     if (password.length < 8) {
-      _showError(
-        'Your password must be at least 8 characters.',
-      );
+      _showError('Your password must be at least 8 characters.');
       return;
     }
 
     if (!acceptedTerms.value) {
-      _showError(
-        'Please accept the Terms of Service and Privacy Policy.',
-      );
+      _showError('Please accept the Terms of Service and Privacy Policy.');
       return;
     }
 
@@ -367,8 +314,7 @@ class AuthController extends GetxController {
       // REQUEST BODY
       // --------------------------------------------------------
 
-      final requestBody =
-          <String, dynamic>{
+      final requestBody = <String, dynamic>{
         'name': name,
         'phone': phone,
         'password': password,
@@ -378,32 +324,21 @@ class AuthController extends GetxController {
         requestBody['email'] = email;
       }
 
-      debugPrint(
-        '>>> Register request: $requestBody',
-      );
+      debugPrint('>>> Register request: $requestBody');
 
       // --------------------------------------------------------
       // CALL LARAVEL
       // --------------------------------------------------------
 
-      final response = await ApiClient.post(
-        'auth/register',
-        requestBody,
-      );
+      final response = await ApiClient.post('auth/register', requestBody);
 
-      debugPrint(
-        '>>> Register response: $response',
-      );
+      debugPrint('>>> Register response: $response');
 
       if (response is! Map) {
-        throw ApiException(
-          500,
-          'Invalid registration response from server.',
-        );
+        throw ApiException(500, 'Invalid registration response from server.');
       }
 
-      final json =
-          Map<String, dynamic>.from(response);
+      final json = Map<String, dynamic>.from(response);
 
       // --------------------------------------------------------
       // SAVE TOKEN
@@ -411,15 +346,10 @@ class AuthController extends GetxController {
 
       final token = json['token'];
 
-      if (token != null &&
-          token.toString().isNotEmpty) {
-        await TokenStorage.saveToken(
-          token.toString(),
-        );
+      if (token != null && token.toString().isNotEmpty) {
+        await TokenStorage.saveToken(token.toString());
 
-        debugPrint(
-          '>>> Registration token saved',
-        );
+        debugPrint('>>> Registration token saved');
       }
 
       // --------------------------------------------------------
@@ -429,21 +359,15 @@ class AuthController extends GetxController {
       final userJson = json['user'];
 
       if (userJson is Map) {
-        final user = UserModel.fromJson(
-          Map<String, dynamic>.from(userJson),
-        );
+        final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
 
         _pendingUserId = user.id;
 
-        debugPrint(
-          '>>> Registered user ID: $_pendingUserId',
-        );
+        debugPrint('>>> Registered user ID: $_pendingUserId');
       } else if (json['user_id'] != null) {
-        _pendingUserId =
-            json['user_id'].toString();
+        _pendingUserId = json['user_id'].toString();
       } else if (json['id'] != null) {
-        _pendingUserId =
-            json['id'].toString();
+        _pendingUserId = json['id'].toString();
       }
 
       // --------------------------------------------------------
@@ -456,8 +380,7 @@ class AuthController extends GetxController {
       // CHECK USER ID
       // --------------------------------------------------------
 
-      if (_pendingUserId == null ||
-          _pendingUserId!.isEmpty) {
+      if (_pendingUserId == null || _pendingUserId!.isEmpty) {
         _showError(
           'Account was created, but the server did not return the user ID needed for verification.',
         );
@@ -468,31 +391,21 @@ class AuthController extends GetxController {
       // GO TO OTP
       // --------------------------------------------------------
 
-      Get.toNamed(
-        AppRoutes.verification,
-      );
+      Get.toNamed(AppRoutes.verification);
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Registration API error: ${e.message}',
-      );
+      debugPrint('>>> Registration API error: ${e.message}');
 
       _showError(e.message);
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Registration unexpected error: $e',
-      );
+      debugPrint('>>> Registration unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Registration failed. Please try again.',
-      );
+      _showError('Registration failed. Please try again.');
     }
   }
 
@@ -510,9 +423,7 @@ class AuthController extends GetxController {
     // ----------------------------------------------------------
 
     if (otp.length != 6) {
-      _showError(
-        'Enter the complete 6-digit verification code.',
-      );
+      _showError('Enter the complete 6-digit verification code.');
       return;
     }
 
@@ -520,11 +431,8 @@ class AuthController extends GetxController {
     // CHECK USER ID
     // ----------------------------------------------------------
 
-    if (_pendingUserId == null ||
-        _pendingUserId!.isEmpty) {
-      _showError(
-        'Something went wrong. Please sign up again.',
-      );
+    if (_pendingUserId == null || _pendingUserId!.isEmpty) {
+      _showError('Something went wrong. Please sign up again.');
       return;
     }
 
@@ -532,41 +440,30 @@ class AuthController extends GetxController {
     errorMessage.value = null;
 
     try {
-      debugPrint(
-        '>>> Verifying OTP for user: $_pendingUserId',
-      );
+      debugPrint('>>> Verifying OTP for user: $_pendingUserId');
 
       // --------------------------------------------------------
       // CALL LARAVEL
       // --------------------------------------------------------
 
-      final response = await ApiClient.post(
-        'auth/verify',
-        {
-          'user_id': _pendingUserId,
-          'code': otp,
-        },
-      );
+      final response = await ApiClient.post('auth/verify', {
+        'user_id': _pendingUserId,
+        'code': otp,
+      });
 
-      debugPrint(
-        '>>> OTP response: $response',
-      );
+      debugPrint('>>> OTP response: $response');
 
       // --------------------------------------------------------
       // SAVE TOKEN IF SERVER RETURNS ONE
       // --------------------------------------------------------
 
       if (response is Map) {
-        final json =
-            Map<String, dynamic>.from(response);
+        final json = Map<String, dynamic>.from(response);
 
         final token = json['token'];
 
-        if (token != null &&
-            token.toString().isNotEmpty) {
-          await TokenStorage.saveToken(
-            token.toString(),
-          );
+        if (token != null && token.toString().isNotEmpty) {
+          await TokenStorage.saveToken(token.toString());
         }
       }
 
@@ -576,31 +473,21 @@ class AuthController extends GetxController {
       // GO TO ROLE SELECTION
       // --------------------------------------------------------
 
-      Get.offNamed(
-        AppRoutes.roleSelection,
-      );
+      Get.offNamed(AppRoutes.roleSelection);
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> OTP API error: ${e.message}',
-      );
+      debugPrint('>>> OTP API error: ${e.message}');
 
       _showError(e.message);
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> OTP unexpected error: $e',
-      );
+      debugPrint('>>> OTP unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Unable to verify your account. Please try again.',
-      );
+      _showError('Unable to verify your account. Please try again.');
     }
   }
 
@@ -637,107 +524,71 @@ class AuthController extends GetxController {
 
       await _googleInit;
 
-      debugPrint(
-        '>>> Google Sign-In initialized',
-      );
+      debugPrint('>>> Google Sign-In initialized');
 
       // --------------------------------------------------------
       // GOOGLE ACCOUNT PICKER
       // --------------------------------------------------------
 
-      final googleUser =
-          await GoogleSignIn.instance.authenticate();
+      final googleUser = await GoogleSignIn.instance.authenticate();
 
-      debugPrint(
-        '>>> Google account selected',
-      );
+      debugPrint('>>> Google account selected');
 
       // --------------------------------------------------------
       // GOOGLE ID TOKEN
       // --------------------------------------------------------
 
-      final idToken =
-          googleUser.authentication.idToken;
+      final idToken = googleUser.authentication.idToken;
 
-      if (idToken == null ||
-          idToken.isEmpty) {
-        throw ApiException(
-          500,
-          'Failed to get Google ID token.',
-        );
+      if (idToken == null || idToken.isEmpty) {
+        throw ApiException(500, 'Failed to get Google ID token.');
       }
 
-      debugPrint(
-        '>>> Google ID token received',
-      );
+      debugPrint('>>> Google ID token received');
 
       // --------------------------------------------------------
       // FIREBASE GOOGLE CREDENTIAL
       // --------------------------------------------------------
 
-      final credential =
-          GoogleAuthProvider.credential(
-        idToken: idToken,
-      );
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
 
       // --------------------------------------------------------
       // SIGN INTO FIREBASE
       // --------------------------------------------------------
 
-      final userCredential =
-          await _firebaseAuth
-              .signInWithCredential(
+      final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
 
-      debugPrint(
-        '>>> Firebase Google sign-in successful',
-      );
+      debugPrint('>>> Firebase Google sign-in successful');
 
       // --------------------------------------------------------
       // FIREBASE ID TOKEN
       // --------------------------------------------------------
 
-      final firebaseIdToken =
-          await userCredential.user?.getIdToken();
+      final firebaseIdToken = await userCredential.user?.getIdToken();
 
-      if (firebaseIdToken == null ||
-          firebaseIdToken.isEmpty) {
-        throw ApiException(
-          500,
-          'Failed to get Firebase ID token.',
-        );
+      if (firebaseIdToken == null || firebaseIdToken.isEmpty) {
+        throw ApiException(500, 'Failed to get Firebase ID token.');
       }
 
-      debugPrint(
-        '>>> Firebase ID token received',
-      );
+      debugPrint('>>> Firebase ID token received');
 
       // --------------------------------------------------------
       // SEND FIREBASE TOKEN TO LARAVEL
       // --------------------------------------------------------
 
-      final response =
-          await ApiClient.post(
-        'auth/firebase/verify',
-        {
-          'id_token': firebaseIdToken,
-        },
-      );
+      final response = await ApiClient.post('auth/firebase/verify', {
+        'id_token': firebaseIdToken,
+      });
 
-      debugPrint(
-        '>>> Laravel Firebase response: $response',
-      );
+      debugPrint('>>> Laravel Firebase response: $response');
 
       if (response is! Map) {
-        throw ApiException(
-          500,
-          'Invalid Firebase authentication response.',
-        );
+        throw ApiException(500, 'Invalid Firebase authentication response.');
       }
 
-      final json =
-          Map<String, dynamic>.from(response);
+      final json = Map<String, dynamic>.from(response);
 
       // --------------------------------------------------------
       // SANCTUM TOKEN
@@ -745,21 +596,16 @@ class AuthController extends GetxController {
 
       final token = json['token'];
 
-      if (token == null ||
-          token.toString().isEmpty) {
+      if (token == null || token.toString().isEmpty) {
         throw ApiException(
           500,
           'Google authentication did not return a token.',
         );
       }
 
-      await TokenStorage.saveToken(
-        token.toString(),
-      );
+      await TokenStorage.saveToken(token.toString());
 
-      debugPrint(
-        '>>> Laravel Sanctum token saved',
-      );
+      debugPrint('>>> Laravel Sanctum token saved');
 
       // --------------------------------------------------------
       // USER
@@ -774,20 +620,15 @@ class AuthController extends GetxController {
         );
       }
 
-      final user = UserModel.fromJson(
-        Map<String, dynamic>.from(userJson),
-      );
+      final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
 
       // --------------------------------------------------------
       // NEW ACCOUNT?
       // --------------------------------------------------------
 
-      final isNew =
-          json['is_new'] as bool? ?? false;
+      final isNew = json['is_new'] as bool? ?? false;
 
-      debugPrint(
-        '>>> Google user isNew: $isNew',
-      );
+      debugPrint('>>> Google user isNew: $isNew');
 
       isLoading.value = false;
 
@@ -796,9 +637,7 @@ class AuthController extends GetxController {
       // --------------------------------------------------------
 
       if (isNew) {
-        Get.offNamed(
-          AppRoutes.roleSelection,
-        );
+        Get.offNamed(AppRoutes.roleSelection);
         return;
       }
 
@@ -806,59 +645,39 @@ class AuthController extends GetxController {
       // EXISTING GOOGLE USER
       // --------------------------------------------------------
 
-      await TokenStorage.saveRole(
-        user.role.name,
-      );
+      await TokenStorage.saveRole(user.role.name);
 
       _goHome(user.role);
-    } on GoogleSignInException catch (e) {
+    } on Exception catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Google Sign-In error: $e',
-      );
+      debugPrint('>>> Google Sign-In error: $e');
 
-      if (e.code ==
-          GoogleSignInExceptionCode.canceled) {
+      if (e.toString().contains('canceled') || e.toString().contains('CANCELED')) {
         return;
       }
 
-      _showError(
-        'Google sign-in failed. Please try again.',
-      );
+      _showError('Google sign-in failed. Please try again.');
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Google API error: ${e.message}',
-      );
+      debugPrint('>>> Google API error: ${e.message}');
 
       _showError(e.message);
     } on FirebaseAuthException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Firebase error: ${e.code}',
-      );
+      debugPrint('>>> Firebase error: ${e.code}');
 
-      _showError(
-        e.message ??
-            'Firebase authentication failed.',
-      );
+      _showError(e.message ?? 'Firebase authentication failed.');
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Google unexpected error: $e',
-      );
+      debugPrint('>>> Google unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Google sign-in failed. Please try again.',
-      );
+      _showError('Google sign-in failed. Please try again.');
     }
   }
 
@@ -880,24 +699,17 @@ class AuthController extends GetxController {
       // SAVE ROLE TO LARAVEL
       // --------------------------------------------------------
 
-      final response = await ApiClient.put(
-        'profile/choose-role',
-        {
-          'role': selectedRole.value.name,
-        },
-      );
+      final response = await ApiClient.put('profile/choose-role', {
+        'role': selectedRole.value.name,
+      });
 
-      debugPrint(
-        '>>> Choose role response: $response',
-      );
+      debugPrint('>>> Choose role response: $response');
 
       // --------------------------------------------------------
       // SAVE ROLE LOCALLY
       // --------------------------------------------------------
 
-      await TokenStorage.saveRole(
-        selectedRole.value.name,
-      );
+      await TokenStorage.saveRole(selectedRole.value.name);
 
       isLoading.value = false;
 
@@ -905,11 +717,8 @@ class AuthController extends GetxController {
       // FARMER
       // --------------------------------------------------------
 
-      if (selectedRole.value ==
-          UserRole.farmer) {
-        Get.toNamed(
-          AppRoutes.profileSetup,
-        );
+      if (selectedRole.value == UserRole.farmer) {
+        Get.toNamed(AppRoutes.profileSetup);
         return;
       }
 
@@ -917,31 +726,21 @@ class AuthController extends GetxController {
       // CUSTOMER
       // --------------------------------------------------------
 
-      Get.offAllNamed(
-        AppRoutes.costumerHomescreen,
-      );
+      Get.offAllNamed(AppRoutes.costumerHomescreen);
     } on ApiException catch (e) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Role API error: ${e.message}',
-      );
+      debugPrint('>>> Role API error: ${e.message}');
 
       _showError(e.message);
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Role unexpected error: $e',
-      );
+      debugPrint('>>> Role unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Unable to save your role. Please try again.',
-      );
+      _showError('Unable to save your role. Please try again.');
     }
   }
 
@@ -950,13 +749,10 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future<void> saveProfile() async {
-    final name =
-        profileNameController.text.trim();
+    final name = profileNameController.text.trim();
 
     if (name.isEmpty) {
-      _showError(
-        'Your full name is required.',
-      );
+      _showError('Your full name is required.');
       return;
     }
 
@@ -964,46 +760,29 @@ class AuthController extends GetxController {
     errorMessage.value = null;
 
     try {
-      final farmName =
-          farmNameController.text.trim();
+      final farmName = farmNameController.text.trim();
 
-      final bio =
-          bioController.text.trim();
+      final bio = bioController.text.trim();
 
-      final body =
-          <String, dynamic>{
-        'name': name,
-      };
+      final body = <String, dynamic>{'name': name};
 
       if (bio.isNotEmpty) {
         body['bio'] = bio;
       }
 
-      if (selectedRole.value ==
-              UserRole.farmer &&
-          farmName.isNotEmpty) {
+      if (selectedRole.value == UserRole.farmer && farmName.isNotEmpty) {
         body['farm_name'] = farmName;
       }
 
-      debugPrint(
-        '>>> Profile request: $body',
-      );
+      debugPrint('>>> Profile request: $body');
 
-      final response =
-          await ApiClient.put(
-        'profile/setup',
-        body,
-      );
+      final response = await ApiClient.put('profile/setup', body);
 
-      debugPrint(
-        '>>> Profile response: $response',
-      );
+      debugPrint('>>> Profile response: $response');
 
       isLoading.value = false;
 
-      Get.toNamed(
-        AppRoutes.locationSetup,
-      );
+      Get.toNamed(AppRoutes.locationSetup);
     } on ApiException catch (e) {
       isLoading.value = false;
 
@@ -1011,17 +790,11 @@ class AuthController extends GetxController {
     } catch (e, stackTrace) {
       isLoading.value = false;
 
-      debugPrint(
-        '>>> Profile unexpected error: $e',
-      );
+      debugPrint('>>> Profile unexpected error: $e');
 
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
+      debugPrint('>>> Stack trace: $stackTrace');
 
-      _showError(
-        'Unable to save your profile. Please try again.',
-      );
+      _showError('Unable to save your profile. Please try again.');
     }
   }
 
@@ -1030,108 +803,84 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future<void> completeLocation() async {
-    final province =
-        provinceController.text.trim();
+    errorMessage.value = null;
 
-    if (province.isEmpty) {
-      _showError(
-        'Choose your province or city first.',
-      );
+    final lat = latitude.value;
+    final lng = longitude.value;
+
+    if (lat == null || lng == null) {
+      errorMessage.value = 'Please select your farm location on the map.';
       return;
     }
 
-    isLoading.value = true;
-    errorMessage.value = null;
+    final province = provinceController.text.trim();
+
+    final district = districtController.text.trim();
+
+    final commune = communeController.text.trim();
+
+    // Province is required by the Laravel API.
+    if (province.isEmpty) {
+      errorMessage.value =
+          'Could not detect your province. '
+          'Please move the pin to your farm location.';
+      return;
+    }
+
+    // ============================================================
+    // REQUEST BODY
+    // ============================================================
+
+    final body = <String, dynamic>{
+      'province': province,
+      'latitude': lat,
+      'longitude': lng,
+    };
+
+    // Only send district when available.
+    if (district.isNotEmpty) {
+      body['district'] = district;
+    }
+
+    // Only send commune when available.
+    if (commune.isNotEmpty) {
+      body['commune'] = commune;
+    }
+
+    // ============================================================
+    // SEND TO LARAVEL
+    // ============================================================
+
+    debugPrint('========== LOCATION REQUEST ==========');
+    debugPrint('URL: profile/location');
+    debugPrint('BODY: $body');
+    debugPrint('LAT: $lat');
+    debugPrint('LNG: $lng');
+    debugPrint('PROVINCE: $province');
+    debugPrint('DISTRICT: $district');
+    debugPrint('COMMUNE: $commune');
 
     try {
-      final district =
-          districtController.text.trim();
+      final response = await ApiClient.put('profile/location', body);
+      debugPrint('========== LOCATION RESPONSE ==========');
+      debugPrint('${response}');
 
-      final commune =
-          communeController.text.trim();
+      errorMessage.value = null;
 
-      final body =
-          <String, dynamic>{
-        'province': province,
-      };
+      // ==========================================================
+      // GO TO NEXT SCREEN
+      // ==========================================================
 
-      if (district.isNotEmpty) {
-        body['district'] = district;
-      }
-
-      if (commune.isNotEmpty) {
-        body['commune'] = commune;
-      }
-
-      debugPrint(
-        '>>> Location request: $body',
-      );
-
-      final response =
-          await ApiClient.put(
-        'profile/location',
-        body,
-      );
-
-      debugPrint(
-        '>>> Location response: $response',
-      );
-
-      if (response is! Map) {
-        throw ApiException(
-          500,
-          'Invalid location response from server.',
-        );
-      }
-
-      final json =
-          Map<String, dynamic>.from(response);
-
-      // --------------------------------------------------------
-      // Laravel profile/location currently returns
-      // the User object directly.
-      //
-      // But this also supports:
-      // { "user": {...} }
-      // --------------------------------------------------------
-
-      final userJson = json['user'];
-
-      late final UserModel user;
-
-      if (userJson is Map) {
-        user = UserModel.fromJson(
-          Map<String, dynamic>.from(userJson),
-        );
-      } else {
-        user = UserModel.fromJson(json);
-      }
-
-      await TokenStorage.saveRole(
-        user.role.name,
-      );
-
-      isLoading.value = false;
-
-      _goHome(user.role);
+      Get.offAllNamed(AppRoutes.farmerHome);
     } on ApiException catch (e) {
-      isLoading.value = false;
+      debugPrint('========== API ERROR ==========');
+      debugPrint('MESSAGE: ${e.message}');
+      debugPrint('ERROR: $e');
 
-      _showError(e.message);
-    } catch (e, stackTrace) {
-      isLoading.value = false;
-
-      debugPrint(
-        '>>> Location unexpected error: $e',
-      );
-
-      debugPrint(
-        '>>> Stack trace: $stackTrace',
-      );
-
-      _showError(
-        'Unable to save your location. Please try again.',
-      );
+      errorMessage.value = e.message;
+    } catch (e) {
+      
+      errorMessage.value = 'Location save failed: $e';
     }
   }
 
@@ -1140,9 +889,7 @@ class AuthController extends GetxController {
   // ============================================================
 
   void _goHome(UserRole role) {
-    debugPrint(
-      '>>> Going home with role: ${role.name}',
-    );
+    debugPrint('>>> Going home with role: ${role.name}');
 
     Get.offAllNamed(
       role == UserRole.farmer
@@ -1180,5 +927,10 @@ class AuthController extends GetxController {
     }
 
     super.onClose();
+  }
+
+  void setLocation(double lat, double lng) {
+    latitude.value = lat;
+    longitude.value = lng;
   }
 }
